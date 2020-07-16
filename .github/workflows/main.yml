@@ -1,0 +1,13 @@
+name: Run maven build
+
+on: [pull_request]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: clean test
+        run: mvn clean test --file pom.xml
