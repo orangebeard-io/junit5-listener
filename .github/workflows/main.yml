@@ -6,6 +6,12 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+
+      # Runs a single command using the runners shell
+      - name: Run a one-line script
+        run: echo Hello, world!
       - name: Run maven script
         uses: xlui/action-maven-cli/jdk11@master
         id: test
