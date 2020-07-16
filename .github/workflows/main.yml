@@ -5,7 +5,7 @@ on: [pull_request]
 jobs:
   build:
 
-    runs-on: maven:3.6.3-jdk-11
+    runs-on: ubuntu-20.04
 
     steps:
       - uses: actions/checkout@v2
