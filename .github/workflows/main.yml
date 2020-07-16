@@ -4,8 +4,10 @@ on: [push, pull_request]
 
 jobs:
   test:
-    runs-on: maven:3.6.3-jdk-11
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: clean test
-        run: mvn clean test
+      - name: Run maven script
+        uses: xlui/action-maven-cli/jdk11@master
+        id: test
+        with:
+          lifecycle: 'clean test'
