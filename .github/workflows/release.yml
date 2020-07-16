@@ -1,0 +1,98 @@
+name: release
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  get-version:
+    runs-on: ubuntu-latest
+    outputs:
+      releaseVersion: ${{ steps.exposeVersion.outputs.releaseVersion }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12.x
+      - name: Install Node dependencies
+        run: npm ci
+      - name: Get version from package.json
+        id: exposeVersion
+        run: echo "::set-output name=releaseVersion::$(npm run get-version --silent)"
+  prepare-release:
+    needs: get-version
+    runs-on: ubuntu-latest
+    outputs:
+      versionInfo: ${{ steps.readChangelogEntry.outputs.log_entry }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Configure git
+        run: |
+          git config --global user.email "info@orangebeard.io"
+          git config --global user.name "Orangebeard.io"
+      - name: Create tag
+        run: |
+          git tag -a v${{ needs.get-version.outputs.releaseVersion }} -m ${{ needs.get-version.outputs.releaseVersion }}
+          git push origin master --follow-tags
+      - name: Setup Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12.x
+      - name: Install Node dependencies
+        run: npm ci
+      - name: Create CHANGELOG.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run create-changelog
+      - name: Upload changelog as artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: changelog
+          path: CHANGELOG.md
+  create-release:
+    needs: [get-version, prepare-release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Download changelog for artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: changelog
+      - name: Create Release
+        id: createRelease
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ needs.get-version.outputs.releaseVersion }}
+          release_name: Release v${{ needs.get-version.outputs.releaseVersion }}
+          body_path: CHANGELOG.md
+          draft: false
+          prerelease: false
+  update-version:
+    needs: [get-version, prepare-release, create-release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Configure git
+        run: |
+          git config --global user.email "info@orangebeard.io"
+          git config --global user.name "Orangebeard.io"
+      - name: Setup Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12.x
+      - name: Install Node dependencies
+        run: npm ci
+      - name: Update version
+        run: /
+          npm run update-version
+          git add package.json package-lock.json
+          git commit -m "Update version"
+          git push origin master
