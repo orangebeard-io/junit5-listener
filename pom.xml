@@ -5,7 +5,7 @@
 
     <groupId>io.orangebeard</groupId>
     <artifactId>junit5-listener</artifactId>
-    <version>1.0.2-SNAPSHOT</version>
+    <version>1.0.3-SNAPSHOT</version>
 
     <url>https://github.com/orangebeard-io/junit5-listener</url>
     <name>Orangebeard.io JUnit5 Listener</name>

@@ -8,7 +8,7 @@
 <h4 align="center">Orangebeard listener for the Java <a href="https://junit.org/junit5/" target="_blank" rel="noopener">JUnit</a> test framework.</h4>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@orangebeard-io/junit5-listener">
+  <a href="https://repo.maven.apache.org/maven2/io/orangebeard/junit5-listener/">
     <img src="https://img.shields.io/maven-central/v/io.orangebeard/junit5-listener?style=flat-square"
       alt="MVN Version" />
   </a>
@@ -39,7 +39,7 @@ Add the dependency to your pom:
 <dependency>
     <groupId>io.orangebeard</groupId>
     <artifactId>junit5-listener</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
     <scope>test</scope>
 </dependency>
 ```
