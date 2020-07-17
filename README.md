@@ -9,7 +9,7 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@orangebeard-io/junit5-listener">
-    <img src="https://img.shields.io/npm/maven-central/v/io.orangebeard/junit5-listener?style=flat-squar"
+    <img src="https://img.shields.io/npm/maven-central/v/io.orangebeard/junit5-listener?style=flat-square"
       alt="MVN Version" />
   </a>
   <a href="https://github.com/orangebeard-io/junit5-listener/actions">
