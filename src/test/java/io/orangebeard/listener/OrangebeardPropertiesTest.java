@@ -11,14 +11,14 @@ class OrangebeardPropertiesTest {
 
     @Test
     public void property_file_is_read_correctly() {
-        OrangebeardProperties orangebeardProperties = new OrangebeardProperties("orangebeard.properties");
+        OrangebeardProperties orangebeardProperties = new OrangebeardProperties("orangebeardpropertiestest.properties");
 
         assertThat(orangebeardProperties.requiredValuesArePresent()).isTrue();
         assertThat(orangebeardProperties.isPropertyFilePresent()).isTrue();
 
         assertThat(orangebeardProperties.getEndpoint()).isEqualTo("https://company.orangebeard.app");
         assertThat(orangebeardProperties.getAccessToken()).isEqualTo(UUID.fromString("043584a0-8081-4270-a32a-ad79ead2dc34"));
-        assertThat(orangebeardProperties.getTestset()).isEqualTo("piet_TEST_EXAMPLE");
+        assertThat(orangebeardProperties.getTestSetName()).isEqualTo("piet_TEST_EXAMPLE");
         assertThat(orangebeardProperties.getProjectName()).isEqualTo("piet_personal");
         assertThat(orangebeardProperties.getDescription()).isEqualTo("My awesome testrun");
         assertThat(orangebeardProperties.getAttributes()).containsOnly(new Attribute("key", "value"), new Attribute("value"));

@@ -17,7 +17,7 @@ public class OrangebeardProperties {
     private String endpoint;
     private UUID accessToken;
     private String projectName;
-    private String testset;
+    private String testSetName;
     private String description;
     private Set<Attribute> attributes;
     private boolean propertyFilePresent;
@@ -37,7 +37,7 @@ public class OrangebeardProperties {
     }
 
     public boolean requiredValuesArePresent() {
-        return endpoint != null && accessToken != null && projectName != null && testset != null;
+        return endpoint != null && accessToken != null && projectName != null && testSetName != null;
     }
 
     private void readPropertyFile(String name) {
@@ -56,7 +56,7 @@ public class OrangebeardProperties {
                 LOGGER.warn("orangebeard.accessToken is not a valid UUID!");
             }
             this.projectName = properties.getProperty("orangebeard.project");
-            this.testset = properties.getProperty("orangebeard.testset");
+            this.testSetName = properties.getProperty("orangebeard.testset");
             this.description = properties.getProperty("orangebeard.description");
             this.attributes = extractAttributes(properties.getProperty("orangebeard.attributes"));
         } catch (IOException e) {
@@ -79,7 +79,7 @@ public class OrangebeardProperties {
             this.projectName = System.getenv("orangebeard" + separator + "project");
         }
         if (System.getenv("orangebeard" + separator + "testset") != null) {
-            this.testset = System.getenv("orangebeard" + separator + "testset");
+            this.testSetName = System.getenv("orangebeard" + separator + "testset");
         }
     }
 

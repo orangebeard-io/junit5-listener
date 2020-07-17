@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TestRun {
+public class StartTestRun {
     private String mode = "DEFAULT";
     private boolean rerun = false;
     private String rerunOf = null;
@@ -29,7 +29,7 @@ public class TestRun {
     private LocalDateTime startTime;
     private Set<Attribute> attributes;
 
-    public TestRun(String name, String description, Set<Attribute> attributes) {
+    public StartTestRun(String name, String description, Set<Attribute> attributes) {
         this.name = name;
         this.description = description;
         this.startTime = LocalDateTime.now();
