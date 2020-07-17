@@ -1,6 +1,6 @@
 <h1 align="center">
   <a href="https://github.com/orangebeard-io/junit5-listener">
-    <img src="https://raw.githubusercontent.com/orangebeard-io/junit5-listener/master/.github/logo.svg" alt="Orangebeard.io JUnit5 Listener" height="200">
+    <img src="https://raw.githubusercontent.com/orangebeard-io/junit5-listener/master/.github/logo.png" alt="Orangebeard.io JUnit5 Listener" height="200">
   </a>
   <br>Orangebeard.io JUnit5 Listener<br>
 </h1>
