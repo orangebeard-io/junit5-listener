@@ -52,12 +52,7 @@ public class OrangebeardExtension implements
 
     public OrangebeardExtension() {
         OrangebeardProperties orangebeardProperties = new OrangebeardProperties();
-        if (!orangebeardProperties.requiredValuesArePresent() && !orangebeardProperties.isPropertyFilePresent()) {
-            LOGGER.error("Required Orangebeard properties are missing. Not all environment variables are present, and orangebeard.properties cannot be found!");
-        }
-        if (!orangebeardProperties.requiredValuesArePresent()) {
-            LOGGER.error("Required Orangebeard properties are missing. Not all environment variables are present, and/or orangebeard.properties misses required values!");
-        }
+        orangebeardProperties.checkPropertiesArePresent();
 
         this.orangebeardClient = new OrangebeardClient(
                 orangebeardProperties.getEndpoint(),
