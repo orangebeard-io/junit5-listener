@@ -5,15 +5,15 @@ import io.orangebeard.listener.entity.FinishTestRun;
 import io.orangebeard.listener.entity.Log;
 import io.orangebeard.listener.entity.Response;
 import io.orangebeard.listener.entity.StartTestItem;
-import io.orangebeard.listener.entity.TestRun;
-
-import java.util.UUID;
+import io.orangebeard.listener.entity.StartTestRun;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.UUID;
 
 import static java.lang.String.format;
 import static org.springframework.http.HttpMethod.POST;
@@ -35,10 +35,10 @@ public class OrangebeardClient {
         this.connectionWithOrangebeardIsValid = connectionWithOrangebeardIsValid;
     }
 
-    public UUID startTestRun(TestRun testRun) {
+    public UUID startTestRun(StartTestRun testRun) {
         if (connectionWithOrangebeardIsValid) {
             try {
-                HttpEntity<TestRun> request = new HttpEntity<>(testRun, getAuthorizationHeaders(uuid.toString()));
+                HttpEntity<StartTestRun> request = new HttpEntity<>(testRun, getAuthorizationHeaders(uuid.toString()));
                 return restTemplate.exchange(format("%s/api/v1/%s/launch", endpoint, projectName), POST, request, Response.class).getBody().getId();
             } catch (Exception e) {
                 LOGGER.error("The connection with Orangebeard could not be established! Check the properties and try again!");
