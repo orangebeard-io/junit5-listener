@@ -1,9 +1,9 @@
 package io.orangebeard.listener.entity;
 
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import java.util.UUID;
 
 @AllArgsConstructor
 @NoArgsConstructor

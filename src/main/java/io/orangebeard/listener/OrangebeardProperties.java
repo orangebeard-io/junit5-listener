@@ -1,9 +1,6 @@
 package io.orangebeard.listener;
 
 import io.orangebeard.listener.entity.Attribute;
-import lombok.Getter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,6 +8,9 @@ import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
+import lombok.Getter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static io.orangebeard.listener.PropertyNames.ORANGEBEARD_ACCESS_TOKEN;
 import static io.orangebeard.listener.PropertyNames.ORANGEBEARD_ATTRIBUTES;
@@ -23,6 +23,7 @@ import static java.lang.System.getenv;
 
 @Getter
 public class OrangebeardProperties {
+    private static final Logger LOGGER = LoggerFactory.getLogger(OrangebeardProperties.class);
     private String endpoint;
     private UUID accessToken;
     private String projectName;
@@ -30,8 +31,6 @@ public class OrangebeardProperties {
     private String description;
     private Set<Attribute> attributes;
     private boolean propertyFilePresent;
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(OrangebeardProperties.class);
 
     OrangebeardProperties(String propertyFile) {
         readPropertyFile(propertyFile);
@@ -78,7 +77,7 @@ public class OrangebeardProperties {
             try {
                 this.accessToken = properties.getProperty(ORANGEBEARD_ACCESS_TOKEN) != null ? UUID.fromString(properties.getProperty(ORANGEBEARD_ACCESS_TOKEN)) : null;
             } catch (IllegalArgumentException e) {
-                LOGGER.warn(ORANGEBEARD_ACCESS_TOKEN+" is not a valid UUID!");
+                LOGGER.warn(ORANGEBEARD_ACCESS_TOKEN + " is not a valid UUID!");
             }
             this.projectName = properties.getProperty(ORANGEBEARD_PROJECT);
             this.testSetName = properties.getProperty(ORANGEBEARD_TESTSET);
