@@ -7,7 +7,14 @@ import io.orangebeard.listener.entity.StartTestItem;
 import io.orangebeard.listener.entity.StartTestRun;
 import io.orangebeard.listener.entity.Status;
 import io.orangebeard.listener.entity.Suite;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
@@ -16,13 +23,6 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.Extension;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestWatcher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
 
 import static io.orangebeard.listener.entity.LogLevel.error;
 import static io.orangebeard.listener.entity.LogLevel.info;
@@ -45,10 +45,10 @@ public class OrangebeardExtension implements
     private static final Logger LOGGER = LoggerFactory.getLogger(OrangebeardExtension.class);
 
     private final OrangebeardClient orangebeardClient;
-    private UUID testrunUUID;
-    private Status testrunStatus = PASSED;
     private final Map<String, Suite> suites = new HashMap<>();
     private final Map<String, UUID> runningTests = new HashMap<>();
+    private UUID testrunUUID;
+    private Status testrunStatus = PASSED;
 
     public OrangebeardExtension() {
         OrangebeardProperties orangebeardProperties = new OrangebeardProperties();

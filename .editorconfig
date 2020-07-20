@@ -1,0 +1,47 @@
+#  Praegus Solutions EditorConfig file
+root = true
+
+[*]
+charset = utf-8
+indent_style = space
+insert_final_newline = true
+max_line_length = 120
+ij_continuation_indent_size = 8
+
+[*.java]
+indent_size = 4
+ij_java_blank_lines_after_imports = 1
+ij_java_blank_lines_before_imports = 1
+ij_java_imports_layout = io.orangebeard.**, |, javax.**, java.**, **, org.junit.**, |, $*
+ij_java_layout_static_imports_separately = true
+ij_java_class_count_to_use_import_on_demand = 1000
+ij_java_names_count_to_use_import_on_demand = 1000
+ij_java_keep_blank_lines_before_right_brace = 0
+ij_java_keep_blank_lines_between_package_declaration_and_header = 1
+ij_java_keep_blank_lines_in_code = 1
+ij_java_keep_blank_lines_in_declarations = 1
+ij_java_blank_lines_after_anonymous_class_header = 0
+ij_java_blank_lines_after_class_header = 0
+ij_java_blank_lines_after_package = 1
+ij_java_blank_lines_around_class = 0
+ij_java_blank_lines_around_field = 0
+ij_java_blank_lines_around_field_in_interface = 0
+ij_java_blank_lines_around_initializer = 0
+ij_java_blank_lines_around_method = 1
+ij_java_blank_lines_around_method_in_interface = 1
+ij_java_blank_lines_before_class_end = 0
+ij_java_blank_lines_before_method_body = 0
+ij_java_blank_lines_before_package = 0
+
+[{*.yml, *.yaml}]
+ij_yaml_keep_indents_on_empty_lines = false
+ij_yaml_keep_line_breaks = true
+indent_size = 2
+
+[{*.kt, *.kts}]
+indent_size = 4
+ij_kotlin_keep_blank_lines_before_right_brace = 0
+ij_kotlin_keep_blank_lines_in_code = 1
+ij_kotlin_keep_blank_lines_in_declarations = 1
+ij_kotlin_blank_lines_after_class_header = 0
+ij_kotlin_blank_lines_around_block_when_branches = 0

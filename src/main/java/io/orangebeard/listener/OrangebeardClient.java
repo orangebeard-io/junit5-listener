@@ -6,6 +6,8 @@ import io.orangebeard.listener.entity.Log;
 import io.orangebeard.listener.entity.Response;
 import io.orangebeard.listener.entity.StartTestItem;
 import io.orangebeard.listener.entity.StartTestRun;
+
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
@@ -13,19 +15,17 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.UUID;
-
 import static java.lang.String.format;
 import static org.springframework.http.HttpMethod.POST;
 import static org.springframework.http.HttpMethod.PUT;
 
 public class OrangebeardClient {
+    private static final Logger LOGGER = LoggerFactory.getLogger(OrangebeardClient.class);
     private final String endpoint;
     private final RestTemplate restTemplate;
     private final UUID uuid;
     private final String projectName;
     private boolean connectionWithOrangebeardIsValid;
-    private static final Logger LOGGER = LoggerFactory.getLogger(OrangebeardClient.class);
 
     public OrangebeardClient(String endpoint, UUID uuid, String projectName, boolean connectionWithOrangebeardIsValid) {
         this.restTemplate = new RestTemplate();
