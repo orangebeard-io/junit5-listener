@@ -1,6 +1,7 @@
 package io.orangebeard.listener;
 
-import io.orangebeard.listener.entity.StartTestItem;
+import io.orangebeard.client.OrangebeardClient;
+import io.orangebeard.client.entity.StartTestItem;
 
 import java.util.UUID;
 import org.mockito.InjectMocks;
