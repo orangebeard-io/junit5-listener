@@ -1,12 +1,14 @@
 package io.orangebeard.listener;
 
-import io.orangebeard.listener.entity.FinishTestItem;
-import io.orangebeard.listener.entity.FinishTestRun;
-import io.orangebeard.listener.entity.Log;
-import io.orangebeard.listener.entity.StartTestItem;
-import io.orangebeard.listener.entity.StartTestRun;
-import io.orangebeard.listener.entity.Status;
-import io.orangebeard.listener.entity.Suite;
+import io.orangebeard.client.OrangebeardClient;
+import io.orangebeard.client.OrangebeardProperties;
+import io.orangebeard.client.entity.FinishTestItem;
+import io.orangebeard.client.entity.FinishTestRun;
+import io.orangebeard.client.entity.Log;
+import io.orangebeard.client.entity.StartTestItem;
+import io.orangebeard.client.entity.StartTestRun;
+import io.orangebeard.client.entity.Status;
+import io.orangebeard.client.entity.Suite;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,14 +26,14 @@ import org.junit.jupiter.api.extension.Extension;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestWatcher;
 
-import static io.orangebeard.listener.entity.LogLevel.error;
-import static io.orangebeard.listener.entity.LogLevel.info;
-import static io.orangebeard.listener.entity.LogLevel.warn;
-import static io.orangebeard.listener.entity.Status.FAILED;
-import static io.orangebeard.listener.entity.Status.PASSED;
-import static io.orangebeard.listener.entity.Status.SKIPPED;
-import static io.orangebeard.listener.entity.TestItemType.STEP;
-import static io.orangebeard.listener.entity.TestItemType.SUITE;
+import static io.orangebeard.client.entity.LogLevel.error;
+import static io.orangebeard.client.entity.LogLevel.info;
+import static io.orangebeard.client.entity.LogLevel.warn;
+import static io.orangebeard.client.entity.Status.FAILED;
+import static io.orangebeard.client.entity.Status.PASSED;
+import static io.orangebeard.client.entity.Status.SKIPPED;
+import static io.orangebeard.client.entity.TestItemType.STEP;
+import static io.orangebeard.client.entity.TestItemType.SUITE;
 
 public class OrangebeardExtension implements
         Extension,
