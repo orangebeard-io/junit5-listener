@@ -16,7 +16,7 @@
     <img src="https://img.shields.io/github/workflow/status/orangebeard-io/junit5-listener/release?style=flat-square"
       alt="Build Status" />
   </a>
-  <a href="https://github.com/orangebeard-io/junit5-listener/blob/master/LICENSE">
+  <a href="https://github.com/orangebeard-io/junit5-listener/blob/master/LICENSE.txt">
     <img src="https://img.shields.io/github/license/orangebeard-io/junit5-listener?style=flat-square"
       alt="License" />
   </a>
