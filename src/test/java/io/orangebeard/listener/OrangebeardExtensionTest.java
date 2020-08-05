@@ -3,7 +3,6 @@ package io.orangebeard.listener;
 import io.orangebeard.client.OrangebeardClient;
 import io.orangebeard.client.entity.FinishTestItem;
 import io.orangebeard.client.entity.StartTestItem;
-
 import io.orangebeard.client.entity.StartTestRun;
 
 import org.junit.jupiter.api.Test;
@@ -11,7 +10,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
