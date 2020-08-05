@@ -5,7 +5,7 @@
 
     <groupId>io.orangebeard</groupId>
     <artifactId>junit5-listener</artifactId>
-    <version>1.0.4-SNAPSHOT</version>
+    <version>1.0.5-SNAPSHOT</version>
 
     <url>https://github.com/orangebeard-io/junit5-listener</url>
     <name>Orangebeard.io JUnit5 Listener</name>
@@ -23,7 +23,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>11</maven.compiler.release>
         <java.version>1.11</java.version>
-        <java.client.version>1.0.0</java.client.version>
+        <java.client.version>1.0.7</java.client.version>
         <junit.version>5.4.2</junit.version>
         <jackson.version>2.10.3</jackson.version>
     </properties>
