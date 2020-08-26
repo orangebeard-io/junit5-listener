@@ -73,7 +73,7 @@ public class OrangebeardExtension implements
     @Override
     public void beforeAll(ExtensionContext extensionContext) {
         StartTestItem testSuite = new StartTestItem(testrunUUID, extensionContext.getDisplayName(), SUITE, null, null);
-        UUID suiteId = orangebeardClient.startTestItem(testrunUUID, testSuite);
+        UUID suiteId = orangebeardClient.startTestItem(null, testSuite);
         suites.put(extensionContext.getUniqueId(), new Suite(suiteId));
     }
 
