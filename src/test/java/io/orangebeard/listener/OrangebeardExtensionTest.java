@@ -38,7 +38,7 @@ class OrangebeardExtensionTest {
 
         orangebeardExtension.beforeAll(extensionContext);
 
-        verify(orangebeardClient).startTestItem(eq(testRunUUID), any(StartTestItem.class));
+        verify(orangebeardClient).startTestItem(eq(null), any(StartTestItem.class));
     }
 
     @Test
