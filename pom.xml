@@ -22,7 +22,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>11</maven.compiler.release>
         <java.version>1.11</java.version>
-        <java.client.version>1.0.7</java.client.version>
+        <java.client.version>1.1.0</java.client.version>
         <junit.version>5.6.2</junit.version>
         <jackson.version>2.10.3</jackson.version>
     </properties>
@@ -52,11 +52,6 @@
             <version>${junit.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.26</version>
-        </dependency>
-        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>3.10</version>
@@ -64,7 +59,7 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
-            <version>1.7.30</version>
+            <version>1.7.25</version>
             <scope>test</scope>
         </dependency>
         <dependency>
