@@ -39,7 +39,7 @@ Add the dependency to your pom:
 <dependency>
     <groupId>io.orangebeard</groupId>
     <artifactId>junit5-listener</artifactId>
-    <version>1.1.0</version>
+    <version>1.0.6</version>
     <scope>test</scope>
 </dependency>
 ```
