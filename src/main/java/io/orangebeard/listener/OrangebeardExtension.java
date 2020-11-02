@@ -11,13 +11,7 @@ import io.orangebeard.client.entity.StartTestRun;
 import io.orangebeard.client.entity.Status;
 import io.orangebeard.client.entity.Suite;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
@@ -26,11 +20,18 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.Extension;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestWatcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 import static io.orangebeard.client.entity.LogLevel.error;
 import static io.orangebeard.client.entity.LogLevel.info;
 import static io.orangebeard.client.entity.LogLevel.warn;
 import static io.orangebeard.client.entity.Status.FAILED;
+import static io.orangebeard.client.entity.Status.INTERRUPTED;
 import static io.orangebeard.client.entity.Status.PASSED;
 import static io.orangebeard.client.entity.Status.SKIPPED;
 import static io.orangebeard.client.entity.TestItemType.STEP;
@@ -129,12 +130,18 @@ public class OrangebeardExtension implements
 
     @Override
     public void testAborted(ExtensionContext extensionContext, Throwable cause) {
-        reportTestResult(extensionContext, FAILED);
+        reportTestResult(extensionContext, INTERRUPTED);
     }
 
     @Override
     public void testFailed(ExtensionContext extensionContext, Throwable cause) {
         UUID testId = runningTests.get(extensionContext.getUniqueId());
+        if (testId == null) {
+            // probably, a test failed before it was properly started (initialization issue). Start the test and fail it afterwards.
+            beforeEach(extensionContext);
+            testId = runningTests.get(extensionContext.getUniqueId());
+        }
+
         FinishTestItem finishTestItem = new FinishTestItem(testrunUUID, FAILED, null, null);
         orangebeardClient.log(new Log(testrunUUID, testId, error, cause.getMessage()));
         orangebeardClient.log(new Log(testrunUUID, testId, info, ExceptionUtils.getStackTrace(cause)));

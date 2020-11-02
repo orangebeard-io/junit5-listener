@@ -10,10 +10,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import java.lang.reflect.Method;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -22,6 +25,9 @@ class OrangebeardExtensionTest {
 
     @Mock
     private OrangebeardClient orangebeardClient;
+
+    @Mock
+    private ExtensionContext suiteContext;
 
     @Mock
     private ExtensionContext extensionContext;
@@ -39,6 +45,51 @@ class OrangebeardExtensionTest {
         orangebeardExtension.beforeAll(extensionContext);
 
         verify(orangebeardClient).startTestItem(eq(null), any(StartTestItem.class));
+    }
+
+
+    @Test
+    public void when_a_launch_suite_and_test_are_started_and_the_test_fails_the_failure_is_reported() {
+        Method method = mock(Method.class);
+        when(method.getName()).thenReturn("testName");
+
+        UUID testUUID = UUID.fromString("49e7186d-e14d-4eeb-bc29-e36279d3b628");
+
+        when(suiteContext.getUniqueId()).thenReturn("suiteId");
+        when(extensionContext.getParent()).thenReturn(Optional.of(suiteContext));
+        when(extensionContext.getUniqueId()).thenReturn("id");
+        when(extensionContext.getRequiredTestMethod()).thenReturn(method);
+        when(orangebeardClient.startTestItem(any(), any())).thenReturn(testUUID);
+
+        OrangebeardExtension orangebeardExtension = new OrangebeardExtension(orangebeardClient);
+
+        orangebeardExtension.beforeAll(suiteContext);
+        orangebeardExtension.beforeEach(extensionContext);
+        orangebeardExtension.testFailed(extensionContext, new Exception("message"));
+
+        verify(orangebeardClient).finishTestItem(eq(testUUID), any(FinishTestItem.class));
+    }
+
+    @Test
+    public void when_a_test_is_not_started_but_it_does_fail_a_test_start_is_reported_before_its_failure_is_reported() {
+        Method method = mock(Method.class);
+        when(method.getName()).thenReturn("testName");
+
+        UUID testUUID = UUID.fromString("49e7186d-e14d-4eeb-bc29-e36279d3b628");
+
+        when(suiteContext.getUniqueId()).thenReturn("suiteId");
+        when(extensionContext.getParent()).thenReturn(Optional.of(suiteContext));
+        when(extensionContext.getUniqueId()).thenReturn("id");
+        when(extensionContext.getRequiredTestMethod()).thenReturn(method);
+        when(orangebeardClient.startTestItem(any(), any())).thenReturn(testUUID);
+
+        OrangebeardExtension orangebeardExtension = new OrangebeardExtension(orangebeardClient);
+
+        orangebeardExtension.beforeAll(suiteContext);
+        orangebeardExtension.testFailed(extensionContext, new Exception("message"));
+
+        verify(orangebeardClient).startTestItem(eq(testUUID), any(StartTestItem.class));
+        verify(orangebeardClient).finishTestItem(eq(testUUID), any(FinishTestItem.class));
     }
 
     @Test
