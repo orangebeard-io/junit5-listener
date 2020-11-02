@@ -31,6 +31,7 @@ import static io.orangebeard.client.entity.LogLevel.error;
 import static io.orangebeard.client.entity.LogLevel.info;
 import static io.orangebeard.client.entity.LogLevel.warn;
 import static io.orangebeard.client.entity.Status.FAILED;
+import static io.orangebeard.client.entity.Status.INTERRUPTED;
 import static io.orangebeard.client.entity.Status.PASSED;
 import static io.orangebeard.client.entity.Status.SKIPPED;
 import static io.orangebeard.client.entity.TestItemType.STEP;
@@ -129,7 +130,7 @@ public class OrangebeardExtension implements
 
     @Override
     public void testAborted(ExtensionContext extensionContext, Throwable cause) {
-        reportTestResult(extensionContext, FAILED);
+        reportTestResult(extensionContext, INTERRUPTED);
     }
 
     @Override
