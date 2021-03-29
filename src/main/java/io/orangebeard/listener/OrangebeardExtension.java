@@ -174,7 +174,7 @@ public class OrangebeardExtension implements
         this.testrunUUID = orangebeardClient.startTestRun(testRun);
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            FinishTestRun finishTestRun = new FinishTestRun(PASSED);
+            FinishTestRun finishTestRun = new FinishTestRun(null);
             orangebeardClient.finishTestRun(testrunUUID, finishTestRun);
         }));
     }
