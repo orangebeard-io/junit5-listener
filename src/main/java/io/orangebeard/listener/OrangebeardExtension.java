@@ -23,6 +23,7 @@ import org.junit.jupiter.api.extension.TestWatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -53,6 +54,10 @@ public class OrangebeardExtension implements
     private final Map<String, UUID> runningTests = new HashMap<>();
     private UUID testrunUUID;
 
+    // Added by SB for keeping track which suites have already been added.
+    private final TestSuiteTree testsuiteHierarchy = new TestSuiteTree("ROOT", null); // Only the root node should have a null UUID.
+    private final boolean useOldCode = false; //TODO!- Switch to be used during development, to easily compare with old code.
+
     public OrangebeardExtension() {
         OrangebeardProperties orangebeardProperties = new OrangebeardProperties();
         orangebeardProperties.checkPropertiesArePresent();
@@ -74,18 +79,83 @@ public class OrangebeardExtension implements
 
     @Override
     public void beforeAll(ExtensionContext extensionContext) {
-        StartTestItem testSuite = new StartTestItem(testrunUUID, extensionContext.getDisplayName(), SUITE, null, null);
-        UUID suiteId = orangebeardClient.startTestItem(null, testSuite);
-        suites.put(extensionContext.getUniqueId(), new Suite(suiteId));
+        LOGGER.info("Starting beforeAll("+extensionContext+")");
+
+        LOGGER.info("extensionContext=="+extensionContext);
+        LOGGER.info("extensionContext.getTestClass()=="+extensionContext.getTestClass());
+        LOGGER.info("extensionContext.getRequiredTestClass()=="+extensionContext.getRequiredTestClass());
+        //LOGGER.info("extensionContext.getRequiredTestClass().getCanonicalName()=="+extensionContext.getRequiredTestClass().getCanonicalName());
+        //LOGGER.info("extensionContext.getTestClass().getCanonicalName()=="+extensionContext.getTestClass().get().getCanonicalName());
+
+        if (useOldCode) {
+            // Original code:
+            StartTestItem testSuite = new StartTestItem(testrunUUID, extensionContext.getDisplayName(), SUITE, null, null);
+            UUID suiteId = orangebeardClient.startTestItem(null, testSuite);
+            suites.put(extensionContext.getUniqueId(), new Suite(suiteId));
+        }
+        else {
+            Class<?> requiredTestClass = extensionContext.getRequiredTestClass();
+
+            //TODO!~ This is a patch to get the unit tests working... because Mockito won't let you mock a class.
+            String canonicalName = "nl.orangebeard.test";
+            if (requiredTestClass != null) {
+                canonicalName = requiredTestClass.getCanonicalName();
+            }
+
+
+            String[] canonicalNameComponents = canonicalName.split("\\.");
+
+            // Walk over the tree.
+            // For every element NOT already in the tree, start a suite, and add the associated node.
+            // Store these newly created nodes in the "suites" map.
+            TestSuiteTree cur = testsuiteHierarchy;
+            for (int i = 0; i < canonicalNameComponents.length; i++) {
+                TestSuiteTree child = cur.getChildByName(canonicalNameComponents[i]);
+                if (child == null) {
+                    // Create the test suite.
+                    StartTestItem startTestItem = new StartTestItem(testrunUUID, canonicalNameComponents[i], SUITE, null, null);
+                    UUID suiteId = orangebeardClient.startTestItem(cur.getTestSuiteUuid(), startTestItem);
+
+                    // Add the newly created suite to the map of suites.
+                    String key = suiteId.toString();
+                    if (i == canonicalNameComponents.length - 1) {
+                        key = extensionContext.getUniqueId();
+                    }
+                    suites.put(key, new Suite(suiteId));
+
+                    // Add the newly created suite to the tree.
+                    child = cur.addChild(canonicalNameComponents[i], suiteId);
+
+                    // ...and continue with the next level.
+                    cur = child;
+                }
+            }
+        }
     }
 
     @Override
     public void afterAll(ExtensionContext extensionContext) {
-        UUID suiteId = suites.get(extensionContext.getUniqueId()).getUuid();
+        if (useOldCode) {
+            UUID suiteId = suites.get(extensionContext.getUniqueId()).getUuid();
 
-        FinishTestItem finishTestItem = new FinishTestItem(testrunUUID, PASSED, null, null);
-        orangebeardClient.finishTestItem(suiteId, finishTestItem);
-        suites.remove(extensionContext.getUniqueId());
+            FinishTestItem finishTestItem = new FinishTestItem(testrunUUID, PASSED, null, null);
+            orangebeardClient.finishTestItem(suiteId, finishTestItem);
+            suites.remove(extensionContext.getUniqueId());
+        } else {
+
+            LOGGER.info("afterAll(...): suites.size()=="+suites.size());
+            Iterator<String> iterator = suites.keySet().iterator();
+            while (iterator.hasNext()) {
+                String key = iterator.next();
+                Suite value = suites.get(key);
+                UUID suiteId = value.getUuid();
+                LOGGER.info("...("+key+", "+value+")");
+
+                FinishTestItem finishTestItem = new FinishTestItem(testrunUUID, PASSED, null, null);
+                orangebeardClient.finishTestItem(suiteId, finishTestItem);
+                iterator.remove();
+            }
+        }
     }
 
     @Override
@@ -96,7 +166,7 @@ public class OrangebeardExtension implements
             UUID testId = orangebeardClient.startTestItem(suiteId, test);
             runningTests.put(extensionContext.getUniqueId(), testId);
         } else {
-            LOGGER.warn("Test with the name [{}}] has no parent and therefore could not be reported", extensionContext.getDisplayName());
+            LOGGER.warn("Test with the name [{}] has no parent and therefore could not be reported", extensionContext.getDisplayName());
         }
     }
 
