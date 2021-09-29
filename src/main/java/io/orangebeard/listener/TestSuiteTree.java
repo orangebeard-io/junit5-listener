@@ -50,28 +50,31 @@ class TestSuiteTree {
      * @param testSuiteUuid UUID of the test suite.
      * @return An Optional containing the newly added node, or an empty Optional if there already was a child node with the given name.
      */
-    Optional<TestSuiteTree> addChild(@NonNull String name, UUID testSuiteUuid) {
+    TestSuiteTree addChild(@NonNull String name, UUID testSuiteUuid) {
         // The field "name" should be unique among the children of a node.
         if (getChildByName(name).isPresent()) {
-            return Optional.empty();
+            return null;
         }
         // If there is not already a child node with the given name, create and add it.
         TestSuiteTree child = new TestSuiteTree(name, testSuiteUuid);
         children.add(child);
         child.parent = this;
-        return Optional.of(child);
+        return child;
     }
 
-    Optional<TestSuiteTree> findSubtree(@NonNull UUID uuid) {
-        if (uuid.equals(this.testSuiteUuid)) {
-            return Optional.of(this);
+    TestSuiteTree findSubtree(@NonNull UUID uuid) {
+        if (uuid.equals(testSuiteUuid)) {
+            return this;
         }
 
-        return children
-                .stream()
-                .filter(x -> x.findSubtree(uuid).isPresent())
-                .findFirst()
-                ;
+        for (TestSuiteTree child : children) {
+            TestSuiteTree searchResult = child.findSubtree(uuid);
+            if (searchResult != null) {
+                return searchResult;
+            }
+        }
+        return null;
+
     }
 
     /**

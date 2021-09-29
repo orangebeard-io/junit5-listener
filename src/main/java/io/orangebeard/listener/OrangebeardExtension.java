@@ -56,7 +56,6 @@ public class OrangebeardExtension implements
 
     // Added by SB for keeping track which suites have already been added.
     private final TestSuiteTree testsuiteHierarchy = new TestSuiteTree("ROOT", null); // Only the root node should have a null UUID.
-    private final boolean useOldCode = false; //TODO!- Switch to be used during development, to easily compare with old code.
 
     public OrangebeardExtension() {
         OrangebeardProperties orangebeardProperties = new OrangebeardProperties();
@@ -77,97 +76,75 @@ public class OrangebeardExtension implements
         startTestRunAndAddShutdownHook(orangebeardProperties);
     }
 
+    /**
+     * Given an ExtensionContext, determine the canonical name of the class that it refers to.
+     * If the ExtensionContext does not have a class (as can happen in a unit test), then it returns an empty String.
+     * @param extensionContext ExtensionContext for a class that is being tested.
+     * @return The fully qualified name of the class that is being tested, or an empty String if there is no such class.
+     */
+    private String getCanonicalName(ExtensionContext extensionContext) {
+        Class<?> requiredTestClass = extensionContext.getRequiredTestClass();
+        String canonicalName = "";
+        if (requiredTestClass != null) {
+            canonicalName = requiredTestClass.getCanonicalName();
+        }
+        return canonicalName;
+    }
+
     @Override
     public void beforeAll(ExtensionContext extensionContext) {
 
-        if (useOldCode) {
-            // Original code:
-            StartTestItem testSuite = new StartTestItem(testrunUUID, extensionContext.getDisplayName(), SUITE, null, null);
-            UUID suiteId = orangebeardClient.startTestItem(null, testSuite);
-            suites.put(extensionContext.getUniqueId(), new Suite(suiteId));
-        }
-        else {
-            Class<?> requiredTestClass = extensionContext.getRequiredTestClass();
+        String canonicalName = getCanonicalName(extensionContext);
+        String[] canonicalNameComponents = canonicalName.split("\\.");
 
-            //TODO!~ This is a patch to get the unit tests working... because Mockito won't let you mock a class.
-            String canonicalName = "nl.orangebeard.test";
-            if (requiredTestClass != null) {
-                canonicalName = requiredTestClass.getCanonicalName();
-            }
-            LOGGER.info("Canonical class name=="+canonicalName);
+        // Walk over the tree.
+        // For every element NOT already in the tree, start a suite, and add the associated node.
+        // Store these newly created nodes in the "suites" map.
+        TestSuiteTree parentNode = testsuiteHierarchy;
+        for (int i = 0; i < canonicalNameComponents.length; i++) {
+            Optional<TestSuiteTree> currentNode = parentNode.getChildByName(canonicalNameComponents[i]);
+            if (currentNode.isEmpty()) {
+                // Create the test suite.
+                StartTestItem startTestItem = new StartTestItem(testrunUUID, canonicalNameComponents[i], SUITE, null, null);
+                UUID suiteId = orangebeardClient.startTestItem(parentNode.getTestSuiteUuid(), startTestItem);
 
-
-            String[] canonicalNameComponents = canonicalName.split("\\.");
-
-            // Walk over the tree.
-            // For every element NOT already in the tree, start a suite, and add the associated node.
-            // Store these newly created nodes in the "suites" map.
-            Optional<TestSuiteTree> currentSuite = Optional.of(testsuiteHierarchy);
-            for (int i = 0; i < canonicalNameComponents.length; i++) {
-                System.out.println("i=="+i+" canonicalNameComponents[i]=="+canonicalNameComponents[i]);
-                Optional<TestSuiteTree> child = currentSuite.get().getChildByName(canonicalNameComponents[i]);
-                if (child.isEmpty()) {
-                    // Create the test suite.
-                    StartTestItem startTestItem = new StartTestItem(testrunUUID, canonicalNameComponents[i], SUITE, null, null);
-                    System.out.println("cur.get().getTestSuiteUuid()=="+currentSuite.get().getTestSuiteUuid());
-                    System.out.println("startTestItem=="+startTestItem);
-                    UUID suiteId = orangebeardClient.startTestItem(currentSuite.get().getTestSuiteUuid(), startTestItem);
-
-                    // Add the newly created suite to the map of suites.
-                    String key = suiteId.toString();
-                    if (i == canonicalNameComponents.length - 1) {
-                        key = extensionContext.getUniqueId();
-                    }
-                    Suite suite = new Suite(suiteId);
-                    System.out.println("suites.put("+key+","+suite+")");
-                    suites.put(key, suite);
-
-                    // Add the newly created suite to the tree.
-                    child = currentSuite.get().addChild(canonicalNameComponents[i], suiteId);
+                // Add the newly created suite to the map of suites.
+                String key = suiteId.toString();
+                if (i == canonicalNameComponents.length - 1) {
+                    key = extensionContext.getUniqueId();
                 }
-                // Continue with the next level of the package hierarchy.
-                currentSuite = child;
+                suites.put(key, new Suite(suiteId));
+
+                // Add the newly created suite to the tree.
+                currentNode = Optional.of(parentNode.addChild(canonicalNameComponents[i], suiteId));
             }
+            // Continue with the next level of the package hierarchy.
+            // At this point, `currentNode` is always filled.
+            parentNode = currentNode.get();
         }
+
     }
 
     @Override
     public void afterAll(ExtensionContext extensionContext) {
-        if (useOldCode) {
-            UUID suiteId = suites.get(extensionContext.getUniqueId()).getUuid();
+        Iterator<String> iterator = suites.keySet().iterator();
+        while (iterator.hasNext()) {
+            String key = iterator.next();
+            Suite value = suites.get(key);
+            UUID suiteId = value.getUuid();
 
             FinishTestItem finishTestItem = new FinishTestItem(testrunUUID, PASSED, null, null);
             orangebeardClient.finishTestItem(suiteId, finishTestItem);
-            suites.remove(extensionContext.getUniqueId());
-        } else {
-
-            LOGGER.info("afterAll(...): suites.size()=="+suites.size());
-            testsuiteHierarchy.log(1);
-            Iterator<String> iterator = suites.keySet().iterator();
-            while (iterator.hasNext()) {
-                String key = iterator.next();
-                Suite value = suites.get(key);
-                UUID suiteId = value.getUuid();
-                LOGGER.info("...("+key+", "+value+")");
-
-                FinishTestItem finishTestItem = new FinishTestItem(testrunUUID, PASSED, null, null);
-                orangebeardClient.finishTestItem(suiteId, finishTestItem);
-                iterator.remove();
-            }
+            iterator.remove();
         }
     }
 
     @Override
     public void beforeEach(ExtensionContext extensionContext) {
+        // SB: In `beforeEach(...)`, the ExtensionContext refers to the *method* under test.
+        //     Its parent refers to the *class* in which the method is defined.
         if (extensionContext.getParent().isPresent()) {
             UUID suiteId = suites.get(extensionContext.getParent().get().getUniqueId()).getUuid();
-
-            System.out.println("suiteId=="+suiteId);
-            Optional<TestSuiteTree> treeNode = testsuiteHierarchy.findSubtree(suiteId);
-            System.out.println(treeNode);
-            System.out.println("extensionContext.getDisplayName()=="+extensionContext.getDisplayName());
-            System.out.println("extensionContext.getUniqueId()=="+extensionContext.getUniqueId());
-
             StartTestItem test = new StartTestItem(testrunUUID, extensionContext.getDisplayName(), STEP, getCodeRef(extensionContext), null);
             UUID testId = orangebeardClient.startTestItem(suiteId, test);
             runningTests.put(extensionContext.getUniqueId(), testId);
