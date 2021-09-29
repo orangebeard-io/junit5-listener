@@ -1,13 +1,14 @@
 package io.orangebeard.listener;
 
-import lombok.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
-
 
 class TestSuiteTree {
 
@@ -22,40 +23,69 @@ class TestSuiteTree {
     /** Child nodes. */
     private final List<TestSuiteTree> children = new ArrayList<>();
 
-    TestSuiteTree(String name, UUID uuid) {
+    /** Construct a new Tree of test suites.
+     * @param name Name of the root node.
+     * @param uuid Name of the test suite's UUID.
+     */
+    TestSuiteTree(@NonNull String name, @Nullable UUID uuid) {
         this.testSuiteName = name;
         this.testSuiteUuid = uuid;
     }
 
+    String getName() { return testSuiteName; }
     UUID getTestSuiteUuid() {
         return testSuiteUuid;
     }
 
-    TestSuiteTree addChild(String name, UUID testSuiteUuid) {
+    @Override
+    public String toString() {
+        return String.format("(%s,%s)", testSuiteUuid, testSuiteName);
+    }
+
+    /**
+     * Add a child node to the given tree node.
+     * The name of the child node must be unique among its siblings.
+     * In other words, a node should not have two or more children with the same value for "name".
+     * @param name Name of the new child node.
+     * @param testSuiteUuid UUID of the test suite.
+     * @return An Optional containing the newly added node, or an empty Optional if there already was a child node with the given name.
+     */
+    Optional<TestSuiteTree> addChild(@NonNull String name, UUID testSuiteUuid) {
         // The field "name" should be unique among the children of a node.
-        if (getChildByName(name) != null) {
-            return null;
+        if (getChildByName(name).isPresent()) {
+            return Optional.empty();
         }
         // If there is not already a child node with the given name, create and add it.
         TestSuiteTree child = new TestSuiteTree(name, testSuiteUuid);
         children.add(child);
         child.parent = this;
-        return child;
+        return Optional.of(child);
+    }
+
+    Optional<TestSuiteTree> findSubtree(@NonNull UUID uuid) {
+        if (uuid.equals(this.testSuiteUuid)) {
+            return Optional.of(this);
+        }
+
+        return children
+                .stream()
+                .filter(x -> x.findSubtree(uuid).isPresent())
+                .findFirst()
+                ;
     }
 
     /**
      * Finds the direct child node with the given name; or <code>null</code> if there is no such node.
      * Names of child nodes should be unique among their siblings.
      * @param name Name of the requested child node.
-     * @return The child node with the given name, or <code>null</code> if there is no such node.
+     * @return An Optional containing the child node with the given name; or an empty Optional if there is no such node.
      */
-    TestSuiteTree getChildByName(String name) {
-        for (TestSuiteTree child : children) {
-            if (child.testSuiteName.compareTo(name) == 0) {
-                return child;
-            }
-        }
-        return null;
+    Optional<TestSuiteTree> getChildByName(@NonNull String name) {
+        return children
+                .stream()
+                .filter(x->name.compareTo(x.getName())==0)
+                .findFirst()
+                ;
     }
 
     void log(int indent) {
@@ -79,8 +109,8 @@ class TestSuiteTree {
 
         String logEntry = String.format("%s%s (UUID=%s, parent UUID=%s) [%s]", spaces, testSuiteName, nodeUuidStr, parentUuidStr, this);
 
-        //LOGGER.info(logEntry);
-        System.out.println(logEntry);
+        LOGGER.info(logEntry);
+        //System.out.println(logEntry);
 
         for (TestSuiteTree child : children) {
             child.log(indent+2);
