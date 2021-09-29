@@ -58,10 +58,10 @@ public class TestSuiteTreeTest {
         TestSuiteTree child2 = root.addChild("child2", UUID.fromString("88fba2e8-375b-4f8e-bf20-edf71dbce434"));
         TestSuiteTree grandchild3 = child2.addChild("grandchild3", UUID.fromString("5e56a046-94fc-49e7-be05-cee03058f8cb"));
         child2.addChild("grandchild4", UUID.fromString("07165b5a-f47e-49ac-b75f-678fa8f28a32"));
+        TestSuiteTree greatGrandchild1 = grandchild3.addChild("greatGrandchild1", uuidToFind);
 
         TestSuiteTree actualResult = root.findSubtree(uuidToFind);
-        TestSuiteTree expectedResult = grandchild3.addChild("greatgrandchild1", uuidToFind);
 
-        Assertions.assertThat(actualResult).isEqualTo(expectedResult);
+        Assertions.assertThat(actualResult).isEqualTo(greatGrandchild1);
     }
 }
