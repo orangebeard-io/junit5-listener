@@ -17,6 +17,7 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -52,17 +53,24 @@ class OrangebeardExtensionTest {
         // Test how the "beforeAll" method behaves if it needs to start multiple suites.
         UUID testRunUUID = UUID.fromString("49e7186d-e14d-4eeb-bc29-e36279d3b628");
 
-        //TODO!~ The test passes, but this MAY be because all items have the same UUID....
-        // We may need to update this unit test, to make sure that we verify on the right item.
+        UUID uuid1 = UUID.fromString("27bf84ed-6269-4629-863d-0899078f8196");
+        UUID uuid2 = UUID.fromString("e9a6f895-7d8b-4baa-8564-844865567ce5");
+        UUID uuid3 = UUID.fromString("dfd80d50-b08e-4b77-bacb-eafff569b578");
+
         when(orangebeardClient.startTestRun(any(StartTestRun.class))).thenReturn(testRunUUID);
         when(extensionContext.getRequiredTestClass()).thenReturn((Class) StringBuffer.class);
-        when(orangebeardClient.startTestItem(any(), any())).thenReturn(UUID.randomUUID());
+        when(orangebeardClient.startTestItem(eq(null), any())).thenReturn(uuid1);
+        when(orangebeardClient.startTestItem(eq(uuid1), any())).thenReturn(uuid2);
+        when(orangebeardClient.startTestItem(eq(uuid2), any())).thenReturn(uuid3);
 
         OrangebeardExtension orangebeardExtension = new OrangebeardExtension(orangebeardClient);
 
         orangebeardExtension.beforeAll(extensionContext);
 
+        // Verify that a test run was started, *and* that all three suites were started.
         verify(orangebeardClient).startTestItem(eq(null), any(StartTestItem.class));
+        verify(orangebeardClient).startTestItem(eq(uuid1), any(StartTestItem.class));
+        verify(orangebeardClient).startTestItem(eq(uuid2), any(StartTestItem.class));
     }
 
 

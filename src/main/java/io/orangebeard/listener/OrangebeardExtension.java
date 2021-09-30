@@ -54,8 +54,8 @@ public class OrangebeardExtension implements
     private final Map<String, UUID> runningTests = new HashMap<>();
     private UUID testrunUUID;
 
-    // Added by SB for keeping track which suites have already been added.
-    private final TestSuiteTree testsuiteHierarchy = new TestSuiteTree("ROOT", null); // Only the root node should have a null UUID.
+    /** Tree-structure to keep track of the hierarchy of test suites. */
+    private final TestSuiteTree root = new TestSuiteTree("ROOT", null); // Only the root node should have a null UUID.
 
     public OrangebeardExtension() {
         OrangebeardProperties orangebeardProperties = new OrangebeardProperties();
@@ -100,7 +100,7 @@ public class OrangebeardExtension implements
         // Walk over the tree.
         // For every element NOT already in the tree, start a suite, and add the associated node.
         // Store these newly created nodes in the "suites" map.
-        TestSuiteTree parentNode = testsuiteHierarchy;
+        TestSuiteTree parentNode = root;
         for (int i = 0; i < canonicalNameComponents.length; i++) {
             Optional<TestSuiteTree> currentNode = parentNode.getChildByName(canonicalNameComponents[i]);
             if (currentNode.isEmpty()) {
@@ -122,7 +122,6 @@ public class OrangebeardExtension implements
             // At this point, `currentNode` is always filled.
             parentNode = currentNode.get();
         }
-
     }
 
     @Override
