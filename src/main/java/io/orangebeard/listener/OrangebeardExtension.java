@@ -77,46 +77,48 @@ public class OrangebeardExtension implements
     }
 
     /**
-     * Given an ExtensionContext, determine the canonical name of the class that it refers to.
+     * Given an ExtensionContext, determine the fully qualified name (canonical name) of the class that it refers to.
      * If the ExtensionContext does not have a class (as can happen in a unit test), then it returns an empty String.
      * @param extensionContext ExtensionContext for a class that is being tested.
      * @return The fully qualified name of the class that is being tested, or an empty String if there is no such class.
      */
-    private String getCanonicalName(ExtensionContext extensionContext) {
+    private String getFullyQualifiedClassName(ExtensionContext extensionContext) {
         Class<?> requiredTestClass = extensionContext.getRequiredTestClass();
-        String canonicalName = "";
+        String fullyQualifiedName = "";
         if (requiredTestClass != null) {
-            canonicalName = requiredTestClass.getCanonicalName();
+            fullyQualifiedName = requiredTestClass.getCanonicalName();
         }
-        return canonicalName;
+        return fullyQualifiedName;
     }
 
     @Override
     public void beforeAll(ExtensionContext extensionContext) {
 
-        String canonicalName = getCanonicalName(extensionContext);
-        String[] canonicalNameComponents = canonicalName.split("\\.");
+        String fullyQualifiedName = getFullyQualifiedClassName(extensionContext);
+        String[] classNameComponents = fullyQualifiedName.split("\\.");
 
-        // Walk over the tree.
-        // For every element NOT already in the tree, start a suite, and add the associated node.
-        // Store these newly created nodes in the "suites" map.
+        // "classNameComponents" contains the fully qualified name of the class under test, split into sections.
+        // We iterate over this array. For each element, we check if it is in the tree.
+        // If the element is already in the tree, then a test suite was already started for this, and we don't have to do anything.
+        // For every element NOT already in the tree, then we must start a new test suite, and add a node to the tree.
+        // We must also store these newly started test suites in the "suites" map.
         TestSuiteTree parentNode = root;
-        for (int i = 0; i < canonicalNameComponents.length; i++) {
-            Optional<TestSuiteTree> currentNode = parentNode.getChildByName(canonicalNameComponents[i]);
+        for (int i = 0; i < classNameComponents.length; i++) {
+            Optional<TestSuiteTree> currentNode = parentNode.getChildByName(classNameComponents[i]);
             if (currentNode.isEmpty()) {
-                // Create the test suite.
-                StartTestItem startTestItem = new StartTestItem(testrunUUID, canonicalNameComponents[i], SUITE, null, null);
+                // Create and start the test suite.
+                StartTestItem startTestItem = new StartTestItem(testrunUUID, classNameComponents[i], SUITE, null, null);
                 UUID suiteId = orangebeardClient.startTestItem(parentNode.getTestSuiteUuid(), startTestItem);
 
                 // Add the newly created suite to the map of suites.
                 String key = suiteId.toString();
-                if (i == canonicalNameComponents.length - 1) {
+                if (i == classNameComponents.length - 1) {
                     key = extensionContext.getUniqueId();
                 }
                 suites.put(key, new Suite(suiteId));
 
-                // Add the newly created suite to the tree.
-                currentNode = Optional.of(parentNode.addChild(canonicalNameComponents[i], suiteId));
+                // Add a node to the tree for this newly created and started test suite.
+                currentNode = Optional.of(parentNode.addChild(classNameComponents[i], suiteId));
             }
             // Continue with the next level of the package hierarchy.
             // At this point, `currentNode` is always filled.
@@ -140,8 +142,6 @@ public class OrangebeardExtension implements
 
     @Override
     public void beforeEach(ExtensionContext extensionContext) {
-        // SB: In `beforeEach(...)`, the ExtensionContext refers to the *method* under test.
-        //     Its parent refers to the *class* in which the method is defined.
         if (extensionContext.getParent().isPresent()) {
             UUID suiteId = suites.get(extensionContext.getParent().get().getUniqueId()).getUuid();
             StartTestItem test = new StartTestItem(testrunUUID, extensionContext.getDisplayName(), STEP, getCodeRef(extensionContext), null);
