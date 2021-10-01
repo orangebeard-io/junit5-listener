@@ -76,26 +76,13 @@ public class OrangebeardExtension implements
         startTestRunAndAddShutdownHook(orangebeardProperties);
     }
 
-    /**
-     * Given an ExtensionContext, determine the fully qualified name (canonical name) of the class that it refers to.
-     * If the ExtensionContext does not have a class (as can happen in a unit test), then it returns an empty String.
-     * @param extensionContext ExtensionContext for a class that is being tested.
-     * @return The fully qualified name of the class that is being tested, or an empty String if there is no such class.
-     */
-    private String getFullyQualifiedClassName(ExtensionContext extensionContext) {
-        Class<?> requiredTestClass = extensionContext.getRequiredTestClass();
-        String fullyQualifiedName = "";
-        if (requiredTestClass != null) {
-            fullyQualifiedName = requiredTestClass.getCanonicalName();
-        }
-        return fullyQualifiedName;
-    }
+
 
     @Override
     public void beforeAll(ExtensionContext extensionContext) {
 
-        String fullyQualifiedName = getFullyQualifiedClassName(extensionContext);
-        String[] classNameComponents = fullyQualifiedName.split("\\.");
+        Class<?> requiredTestClass = extensionContext.getRequiredTestClass();
+        String[] classNameComponents = getFullyQualifiedClassName(requiredTestClass);
 
         // "classNameComponents" contains the fully qualified name of the class under test, split into sections.
         // We iterate over this array. For each element, we check if it is in the tree.
@@ -115,7 +102,8 @@ public class OrangebeardExtension implements
                 if (i == classNameComponents.length - 1) {
                     key = extensionContext.getUniqueId();
                 }
-                suites.put(key, new Suite(suiteId));
+                Suite suite = new Suite(suiteId);
+                suites.put(key, suite);
 
                 // Add a node to the tree for this newly created and started test suite.
                 currentNode = Optional.of(parentNode.addChild(classNameComponents[i], suiteId));
@@ -229,5 +217,23 @@ public class OrangebeardExtension implements
             FinishTestRun finishTestRun = new FinishTestRun();
             orangebeardClient.finishTestRun(testrunUUID, finishTestRun);
         }));
+    }
+
+    /**
+     * Given a class, determine it fully qualified name (canonical name), split into its subpackages.
+     * For example, if the input is the Class for "io.orangebeard.test.TestClass", this method will return the array ["io", "orangebeard", "test", "TestClass"].
+     * If the input is <code>null</code> (as can happen in a unit test), then it returns an array with 0 elements.
+     * @param clazz The class to analyze.
+     * @return The fully qualified name of the class, split into its components. If there is no class (if the input is <code>null</code>), then this method returns an array with 0 elements.
+     */
+    private static String[] getFullyQualifiedClassName(Class<?> clazz) {
+        String[] fullyQualifiedName = new String[] {};
+        if (clazz != null) {
+            fullyQualifiedName = clazz
+                    .getCanonicalName()
+                    .split("\\.")
+                    ;
+        }
+        return fullyQualifiedName;
     }
 }

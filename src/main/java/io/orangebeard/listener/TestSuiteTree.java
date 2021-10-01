@@ -27,13 +27,13 @@ class TestSuiteTree {
      * @param name Name of the root node.
      * @param uuid Name of the test suite's UUID.
      */
-    TestSuiteTree(@NonNull String name, @Nullable UUID uuid) {
+    public TestSuiteTree(@NonNull String name, @Nullable UUID uuid) {
         this.testSuiteName = name;
         this.testSuiteUuid = uuid;
     }
 
-    String getName() { return testSuiteName; }
-    UUID getTestSuiteUuid() {
+    public String getName() { return testSuiteName; }
+    public UUID getTestSuiteUuid() {
         return testSuiteUuid;
     }
 
@@ -50,7 +50,7 @@ class TestSuiteTree {
      * @param testSuiteUuid UUID of the test suite.
      * @return An Optional containing the newly added node, or an empty Optional if there already was a child node with the given name.
      */
-    TestSuiteTree addChild(@NonNull String name, UUID testSuiteUuid) {
+    public TestSuiteTree addChild(@NonNull String name, UUID testSuiteUuid) {
         // The field "name" should be unique among the children of a node.
         if (getChildByName(name).isPresent()) {
             return null;
@@ -62,7 +62,7 @@ class TestSuiteTree {
         return child;
     }
 
-    TestSuiteTree findSubtree(@NonNull UUID uuid) {
+    public TestSuiteTree findSubtree(@NonNull UUID uuid) {
         if (uuid.equals(testSuiteUuid)) {
             return this;
         }
@@ -83,15 +83,15 @@ class TestSuiteTree {
      * @param name Name of the requested child node.
      * @return An Optional containing the child node with the given name; or an empty Optional if there is no such node.
      */
-    Optional<TestSuiteTree> getChildByName(@NonNull String name) {
+    public Optional<TestSuiteTree> getChildByName(@NonNull String name) {
         return children
                 .stream()
-                .filter(x->name.compareTo(x.getName())==0)
+                .filter(treeItem->name.equals(treeItem.getName()))
                 .findFirst()
                 ;
     }
 
-    void log(int indent) {
+    public void log(int indent) {
 
         // Create a String of "indent" spaces.
         // If indent is 0 or less, String.format throws an exception; so we need to handle that case.
