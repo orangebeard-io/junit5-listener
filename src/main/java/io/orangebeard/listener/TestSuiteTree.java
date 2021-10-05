@@ -54,7 +54,8 @@ class TestSuiteTree {
      * The name of the child node must be unique among its siblings.
      * In other words, a node should not have two or more children with the same value for "name".
      * @param name Name of the new child node.
-     * @param testSuiteId ID of the test suite.
+     * @param testSuiteId ID to register the test suite. It is the caller's responsibility that this is unique in the tree!
+     *                    It is advised to use <code>testSuite.UUID</code> for this ID.
      * @param testSuite The test suite proper; sometimes <code>null</code>, for example in unit tests.
      * @return An Optional containing the newly added node, or an empty Optional if there already was a child node with the given name.
      */
@@ -70,6 +71,10 @@ class TestSuiteTree {
         return child;
     }
 
+    /** Find the subtree that was registered with the given ID.
+     * @param id Id of the subtree.
+     * @return The subtree with the given ID, or <code>null</code> if there is no such subtree.
+     */
     public TestSuiteTree findSubtree(@NonNull String id) {
         if (id.equals(testSuiteId)) {
             return this;
@@ -123,7 +128,7 @@ class TestSuiteTree {
 
     /**
      * Detach this subtree from its parent.
-     * @return `true` if and the subtree was successfully removed, or if it didn't have a parent in the first place. `false` otherwise.
+     * @return `true` if and the subtree was successfully removed, or if it didn't have a parent in the first place. Returns `false` otherwise.
      */
     public boolean detach() {
         if (parent == null)
@@ -135,29 +140,4 @@ class TestSuiteTree {
         }
         return res;
     }
-
-    public void log(int indent) {
-
-        // Create a String of "indent" spaces.
-        // If indent is 0 or less, String.format throws an exception; so we need to handle that case.
-        String spaces = "";
-        if (indent > 0) {
-            spaces = String.format("%"+indent+"s", " ");
-        }
-
-        String parentIdStr = null;
-        if (parent != null) {
-            parentIdStr = parent.testSuiteId;
-        }
-
-        String logEntry = String.format("%s%s (ID=%s, parent ID=%s) [%s]", spaces, testSuiteName, testSuiteId, parentIdStr, this);
-
-        LOGGER.info(logEntry);
-        //System.out.println(logEntry);
-
-        for (TestSuiteTree child : children) {
-            child.log(indent+2);
-        }
-    }
-
 }

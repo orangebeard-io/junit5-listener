@@ -23,7 +23,6 @@ import org.junit.jupiter.api.extension.TestWatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -51,7 +50,6 @@ public class OrangebeardExtension implements
     private static final Logger LOGGER = LoggerFactory.getLogger(OrangebeardExtension.class);
 
     private final OrangebeardClient orangebeardClient;
-    private final Map<String, Suite> suites = new HashMap<>(); //TODO!-
     private final Map<String, UUID> runningTests = new HashMap<>();
     private UUID testrunUUID;
 
@@ -108,7 +106,6 @@ public class OrangebeardExtension implements
                     key = extensionContext.getUniqueId();
                 }
                 Suite suite = new Suite(suiteId);   // Note that "Suite" just keeps track of UUID and status.
-                suites.put(key, suite); //TODO!- We're working on removing the "suites" map.
 
                 // Add a node to the tree for this newly created and started test suite.
                 currentNode = Optional.of(parentNode.addChild(classNameComponents[i], key, suite));
@@ -121,31 +118,14 @@ public class OrangebeardExtension implements
 
     @Override
     public void afterAll(ExtensionContext extensionContext) {
-        //afterAll1();  // Original "afterAll" code.
-        afterAll2();    // New "afterAll" code.
-    }
-
-    private void afterAll1() {
-        root.log(0);
-        Iterator<String> iterator = suites.keySet().iterator();
-        while (iterator.hasNext()) {
-            String key = iterator.next();
-            Suite value = suites.get(key);
-            UUID suiteId = value.getUuid();
-
-            FinishTestItem finishTestItem = new FinishTestItem(testrunUUID, PASSED, null, null);
-            orangebeardClient.finishTestItem(suiteId, finishTestItem);
-            iterator.remove();
-        }
-        root.log(0);
-    }
-
-    public void afterAll2() {
-        root.log(0);
+        // The test suites that were started, must now be finished cleanly.
+        // After finishing a test suite, it should be removed from the tree.
+        // If we remove a "parent" suite before its "children" suites, we can't remove that node from the tree without removing the children.
+        // So we remove them layer by layer: remove only leaf nodes, after that remove what have now become leaf nodes, and so on.
+        // Note that other approaches are possible.
         while (!root.isLeaf()) {
             List<TestSuiteTree> leaves = root.getLeaves();
             for (TestSuiteTree leaf : leaves) {
-                System.out.println("[" + leaf.getName() + ", " + leaf.getTestSuiteId() + ", " + leaf.getTestSuite() + "==<" + leaf.getTestSuite().getUuid() + ", " + leaf.getTestSuite().getStatus() + ">]");
                 Suite value = leaf.getTestSuite();
                 UUID suiteId = value.getUuid();
 
@@ -153,11 +133,8 @@ public class OrangebeardExtension implements
                 orangebeardClient.finishTestItem(suiteId, finishTestItem);
                 leaf.detach();
             }
-            root.log(0);
         }
     }
-
-
 
     @Override
     public void beforeEach(ExtensionContext extensionContext) {
@@ -185,11 +162,16 @@ public class OrangebeardExtension implements
     @Override
     public void testDisabled(ExtensionContext extensionContext, Optional<String> reason) {
         if (extensionContext.getParent().isPresent()) {
-            UUID suiteId = suites.get(extensionContext.getParent().get().getUniqueId()).getUuid();
+            String parentId = extensionContext.getParent().get().getUniqueId();
+            TestSuiteTree subtree = root.findSubtree(parentId);
+            UUID suiteId = subtree.getTestSuite().getUuid();
+
             StartTestItem test = new StartTestItem(testrunUUID, extensionContext.getDisplayName(), STEP, getCodeRef(extensionContext), null);
             UUID testId = orangebeardClient.startTestItem(suiteId, test);
+
             FinishTestItem finishTestItem = new FinishTestItem(testrunUUID, SKIPPED, null, null);
             reason.ifPresent(s -> orangebeardClient.log(new Log(testrunUUID, testId, warn, s)));
+
             orangebeardClient.finishTestItem(testId, finishTestItem);
         } else {
             LOGGER.warn("Test with the name [{}] has no parent and therefore could not be reported", extensionContext.getDisplayName());
