@@ -9,7 +9,6 @@ import io.orangebeard.client.entity.Log;
 import io.orangebeard.client.entity.StartTestItem;
 import io.orangebeard.client.entity.StartTestRun;
 import io.orangebeard.client.entity.Status;
-import io.orangebeard.client.entity.Suite;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -124,6 +123,9 @@ public class OrangebeardExtension implements
         // After finishing a test suite, it should be removed from the tree.
         // We only remove leaf nodes, because the intermediate nodes may be needed in the next suite of this test run.
         List<TestSuiteTree> leaves = root.getLeaves();
+        // If is possible that the root has 0 children; then the root itself is a leaf node.
+        // But the root node does not contain tests itself.
+        leaves.remove(root);
         for (TestSuiteTree leaf : leaves) {
             UUID suiteId = leaf.getTestSuiteUUID();
             FinishTestItem finishTestItem = new FinishTestItem(testrunUUID, PASSED, null, null);

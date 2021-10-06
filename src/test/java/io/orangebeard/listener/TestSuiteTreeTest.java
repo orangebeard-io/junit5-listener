@@ -3,6 +3,7 @@ package io.orangebeard.listener;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -88,5 +89,27 @@ public class TestSuiteTreeTest {
         TestSuiteTree actualResult = root.findSubtree(idToFind);
 
         assertThat(actualResult).isEqualTo(greatGrandchild1);
+    }
+
+    @Test
+    public void when_leaves_are_requested_then_only_nodes_without_children_are_returned() {
+        String idOfRoot = "096bac26-b9ae-43c3-aec5-1eebd1f96403";
+        String idOfChild1 = "781c5b1e-a6e5-4ede-9dfd-36f41ed94bec";
+        String idOfChild2 = "88fba2e8-375b-4f8e-bf20-edf71dbce434";
+        String idOfGrandchild1 = "20c9b62b-5d38-46ba-9172-f7e689870c09";
+        String idOfGrandchild2 = "a595fab8-3876-444f-b48e-7e777bf85d65";
+        TestSuiteTree root = new TestSuiteTree("", "rootID", UUID.fromString(idOfRoot));
+        TestSuiteTree child1 = root.addChild("child1", idOfChild1, UUID.fromString(idOfChild1));
+        TestSuiteTree grandchild1 = child1.addChild("grandchild1", idOfGrandchild1, UUID.fromString(idOfGrandchild1));
+        TestSuiteTree grandchild2 = child1.addChild("grandchild2", idOfGrandchild2, UUID.fromString(idOfGrandchild2));
+        TestSuiteTree child2 = root.addChild("child2", idOfChild2, UUID.fromString(idOfChild2));
+
+        List<TestSuiteTree> leaves = root.getLeaves();
+
+        assertThat(leaves).contains(grandchild1);
+        assertThat(leaves).contains(grandchild2);
+        assertThat(leaves).contains(child2);
+        assertThat(leaves).doesNotContain(root);
+        assertThat(leaves).doesNotContain(child1);
     }
 }
