@@ -53,10 +53,11 @@ public class OrangebeardExtension implements
     private final Map<String, UUID> runningTests = new HashMap<>();
     private UUID testrunUUID;
 
-    /** Tree-structure to keep track of the hierarchy of test suites.
-     * Initialized with an arbitrary ID. Note that this same arbitrary value is, by necessity, used in the unit tests.
-     */
-    private final TestSuiteTree root = new TestSuiteTree("ROOT","342e7cc4-8ac6-4d2a-8659-10bee9060de0", null);
+    /** Arbitrary UUID for the root node. */
+    private final UUID rootUUID = UUID.fromString("342e7cc4-8ac6-4d2a-8659-10bee9060de0");
+
+    /** Tree-structure to keep track of the hierarchy of test suites. */
+    private final TestSuiteTree root = new TestSuiteTree("ROOT",rootUUID.toString(), rootUUID);
 
     public OrangebeardExtension() {
         OrangebeardProperties orangebeardProperties = new OrangebeardProperties();
@@ -86,29 +87,30 @@ public class OrangebeardExtension implements
         // We iterate over this array. For each element, we check if it is in the tree.
         // If the element is already in the tree, then a test suite was already started for this, and we don't have to do anything.
         // For every element NOT already in the tree, then we must start a new test suite, and add a node to the tree.
-        // We must also store these newly started test suites in the "suites" map.
         TestSuiteTree parentNode = root;
         for (int i = 0; i < classNameComponents.length; i++) {
             Optional<TestSuiteTree> currentNode = parentNode.getChildByName(classNameComponents[i]);
             if (currentNode.isEmpty()) {
                 // Create and start the test suite.
                 StartTestItem startTestItem = new StartTestItem(testrunUUID, classNameComponents[i], SUITE, null, null);
-                String idOfParent = parentNode.getTestSuiteId();
+
+                // Get the UUID of the test suite in the parent node; use "null" if the parent node is the root node.
+                // The node key is usually the String representation of that UUID, but that is not guaranteed.
+                // This is why we keep track of a node's test suite UUID separately.
                 UUID uuidOfParent = null;
-                if (idOfParent != null) {
-                    uuidOfParent = UUID.fromString(idOfParent); //TODO?~ What if the parent's ID ISN'T a UUID?
+                if (parentNode != root) {
+                    uuidOfParent = parentNode.getTestSuiteUUID();
                 }
+
+                // Now that we now the UUID of the parent suite, we can start a new suite as its child.
                 UUID suiteId = orangebeardClient.startTestItem(uuidOfParent, startTestItem);
 
-                // Add the newly created suite to the map of suites.
+                // Add a node to the tree for this newly created and started test suite.
                 String key = suiteId.toString();
                 if (i == classNameComponents.length - 1) {
                     key = extensionContext.getUniqueId();
                 }
-                Suite suite = new Suite(suiteId);   // Note that "Suite" just keeps track of UUID and status.
-
-                // Add a node to the tree for this newly created and started test suite.
-                currentNode = Optional.of(parentNode.addChild(classNameComponents[i], key, suite));
+                currentNode = Optional.of(parentNode.addChild(classNameComponents[i], key, suiteId));
             }
             // Continue with the next level of the package hierarchy.
             // At this point, `currentNode` is always filled.
@@ -120,19 +122,13 @@ public class OrangebeardExtension implements
     public void afterAll(ExtensionContext extensionContext) {
         // The test suites that were started, must now be finished cleanly.
         // After finishing a test suite, it should be removed from the tree.
-        // If we remove a "parent" suite before its "children" suites, we can't remove that node from the tree without removing the children.
-        // So we remove them layer by layer: remove only leaf nodes, after that remove what have now become leaf nodes, and so on.
-        // Note that other approaches are possible.
-        while (!root.isLeaf()) {
-            List<TestSuiteTree> leaves = root.getLeaves();
-            for (TestSuiteTree leaf : leaves) {
-                Suite value = leaf.getTestSuite();
-                UUID suiteId = value.getUuid();
-
-                FinishTestItem finishTestItem = new FinishTestItem(testrunUUID, PASSED, null, null);
-                orangebeardClient.finishTestItem(suiteId, finishTestItem);
-                leaf.detach();
-            }
+        // We only remove leaf nodes, because the intermediate nodes may be needed in the next suite of this test run.
+        List<TestSuiteTree> leaves = root.getLeaves();
+        for (TestSuiteTree leaf : leaves) {
+            UUID suiteId = leaf.getTestSuiteUUID();
+            FinishTestItem finishTestItem = new FinishTestItem(testrunUUID, PASSED, null, null);
+            orangebeardClient.finishTestItem(suiteId, finishTestItem);
+            leaf.detach();
         }
     }
 
@@ -140,8 +136,7 @@ public class OrangebeardExtension implements
     public void beforeEach(ExtensionContext extensionContext) {
         if (extensionContext.getParent().isPresent()) {
             String parentId = extensionContext.getParent().get().getUniqueId();
-            Suite suite = root.findSubtree(parentId).getTestSuite();
-            UUID suiteId = suite.getUuid();
+            UUID suiteId = root.findSubtree(parentId).getTestSuiteUUID();
             StartTestItem test = new StartTestItem(testrunUUID, extensionContext.getDisplayName(), STEP, getCodeRef(extensionContext), null);
             UUID testId = orangebeardClient.startTestItem(suiteId, test);
             runningTests.put(extensionContext.getUniqueId(), testId);
@@ -163,15 +158,13 @@ public class OrangebeardExtension implements
     public void testDisabled(ExtensionContext extensionContext, Optional<String> reason) {
         if (extensionContext.getParent().isPresent()) {
             String parentId = extensionContext.getParent().get().getUniqueId();
-            TestSuiteTree subtree = root.findSubtree(parentId);
-            UUID suiteId = subtree.getTestSuite().getUuid();
+            UUID suiteId = root.findSubtree(parentId).getTestSuiteUUID();
 
             StartTestItem test = new StartTestItem(testrunUUID, extensionContext.getDisplayName(), STEP, getCodeRef(extensionContext), null);
             UUID testId = orangebeardClient.startTestItem(suiteId, test);
 
             FinishTestItem finishTestItem = new FinishTestItem(testrunUUID, SKIPPED, null, null);
             reason.ifPresent(s -> orangebeardClient.log(new Log(testrunUUID, testId, warn, s)));
-
             orangebeardClient.finishTestItem(testId, finishTestItem);
         } else {
             LOGGER.warn("Test with the name [{}] has no parent and therefore could not be reported", extensionContext.getDisplayName());

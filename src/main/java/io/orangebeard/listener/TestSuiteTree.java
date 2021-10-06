@@ -1,28 +1,23 @@
 package io.orangebeard.listener;
 
-import io.orangebeard.client.entity.Suite;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 class TestSuiteTree {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(TestSuiteTree.class);
-
     /** Name of the node. Unique among siblings. */
     private final String testSuiteName;
 
-    /** Unique ID of the test suite at this level. */
-    private final String testSuiteId;
+    /** Unique key for test suite at this level.
+     * This is usually but not always a UUID.
+     */
+    private final String nodeKey;
 
-    /** The test suite associated with this ID. */
-    private final Suite testSuite;
+    /** UUID for the test suite at this level. */
+    private final UUID testSuiteUUID;
 
     /** Reference to the parent node. */
     private TestSuiteTree parent;
@@ -32,21 +27,22 @@ class TestSuiteTree {
 
     /** Construct a new Tree of test suites.
      * @param name Name of the root node.
-     * @param testSuiteId ID of the test suite. Often a UUID in String form, but not always.
+     * @param nodeKey Key of the test suite. Often a UUID in String form, but not always.
+     * @param testSuiteUUID UUID for the test suite at this level.
      */
-    public TestSuiteTree(@NonNull String name, @NonNull String testSuiteId, @Nullable Suite testSuite) {
+    public TestSuiteTree(@NonNull String name, @NonNull String nodeKey, @NonNull UUID testSuiteUUID) {
         this.testSuiteName = name;
-        this.testSuiteId = testSuiteId;
-        this.testSuite = testSuite;
+        this.nodeKey = nodeKey;
+        this.testSuiteUUID = testSuiteUUID;
     }
 
     public String getName() { return testSuiteName; }
-    public String getTestSuiteId() { return testSuiteId; }
-    public Suite getTestSuite() { return testSuite; }
+    public String getNodeKey() { return nodeKey; }
+    public UUID getTestSuiteUUID() { return testSuiteUUID; }
 
     @Override
     public String toString() {
-        return String.format("(%s,%s,%s,%s)", testSuiteId, testSuiteName, testSuite, testSuite == null ? "No suite ID" : testSuite.getUuid());
+        return String.format("(%s, %s, %s)", nodeKey, testSuiteName, testSuiteUUID);
     }
 
     /**
@@ -54,18 +50,18 @@ class TestSuiteTree {
      * The name of the child node must be unique among its siblings.
      * In other words, a node should not have two or more children with the same value for "name".
      * @param name Name of the new child node.
-     * @param testSuiteId ID to register the test suite. It is the caller's responsibility that this is unique in the tree!
+     * @param nodeKey ID to register the test suite. It is the caller's responsibility that this is unique in the tree!
      *                    It is advised to use <code>testSuite.UUID</code> for this ID.
-     * @param testSuite The test suite proper; sometimes <code>null</code>, for example in unit tests.
+     * @param testSuiteUUID UUID of the test suite.
      * @return An Optional containing the newly added node, or an empty Optional if there already was a child node with the given name.
      */
-    public TestSuiteTree addChild(@NonNull String name, @NonNull String testSuiteId, @Nullable Suite testSuite) {
+    public TestSuiteTree addChild(@NonNull String name, @NonNull String nodeKey, @NonNull UUID testSuiteUUID) {
         // The field "name" should be unique among the children of a node.
         if (getChildByName(name).isPresent()) {
             return null;
         }
         // If there is not already a child node with the given name, create and add it.
-        TestSuiteTree child = new TestSuiteTree(name, testSuiteId, testSuite);
+        TestSuiteTree child = new TestSuiteTree(name, nodeKey, testSuiteUUID);
         children.add(child);
         child.parent = this;
         return child;
@@ -76,7 +72,7 @@ class TestSuiteTree {
      * @return The subtree with the given ID, or <code>null</code> if there is no such subtree.
      */
     public TestSuiteTree findSubtree(@NonNull String id) {
-        if (id.equals(testSuiteId)) {
+        if (id.equals(nodeKey)) {
             return this;
         }
 
@@ -101,13 +97,6 @@ class TestSuiteTree {
                 .filter(treeItem->name.equals(treeItem.getName()))
                 .findFirst()
                 ;
-    }
-
-    /** Determine if the node is a leaf node.
-     * @return 'true' if and only if the node has no child nodes.
-     */
-    public boolean isLeaf() {
-        return children.isEmpty();
     }
 
     /**

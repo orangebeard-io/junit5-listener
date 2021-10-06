@@ -43,7 +43,6 @@ class OrangebeardExtensionTest {
         when(extensionContext.getUniqueId()).thenReturn("id");
 
         UUID testRunUUID = UUID.fromString("49e7186d-e14d-4eeb-bc29-e36279d3b628");
-        UUID rootUUID = UUID.fromString("342e7cc4-8ac6-4d2a-8659-10bee9060de0");
 
         when(orangebeardClient.startTestRun(any(StartTestRun.class))).thenReturn(testRunUUID);
         //when(extensionContext.getDisplayName()).thenReturn("suitename");
@@ -54,21 +53,20 @@ class OrangebeardExtensionTest {
 
         orangebeardExtension.beforeAll(extensionContext);
 
-        verify(orangebeardClient).startTestItem(eq(rootUUID), any(StartTestItem.class));
+        verify(orangebeardClient).startTestItem(eq(null), any(StartTestItem.class));
     }
 
     @Test
     public void before_all_with_multiple_suites() {
         // Test how the "beforeAll" method behaves if it needs to start multiple suites.
         UUID testRunUUID = UUID.fromString("49e7186d-e14d-4eeb-bc29-e36279d3b628");
-        UUID rootUUID = UUID.fromString("342e7cc4-8ac6-4d2a-8659-10bee9060de0");
         UUID suiteUUID = UUID.fromString("27bf84ed-6269-4629-863d-0899078f8196");
         UUID subSuiteUUID = UUID.fromString("e9a6f895-7d8b-4baa-8564-844865567ce5");
         UUID subSubSuiteUUID = UUID.fromString("dfd80d50-b08e-4b77-bacb-eafff569b578");
 
         when(orangebeardClient.startTestRun(any(StartTestRun.class))).thenReturn(testRunUUID);
         when(extensionContext.getRequiredTestClass()).thenReturn((Class) StringBuffer.class);
-        lenient().when(orangebeardClient.startTestItem(eq(rootUUID), any())).thenReturn(suiteUUID);
+        lenient().when(orangebeardClient.startTestItem(eq(null), any())).thenReturn(suiteUUID);
         lenient().when(orangebeardClient.startTestItem(eq(suiteUUID), any())).thenReturn(subSuiteUUID);
         lenient().when(orangebeardClient.startTestItem(eq(subSuiteUUID), any())).thenReturn(subSubSuiteUUID);
 
@@ -76,7 +74,7 @@ class OrangebeardExtensionTest {
         orangebeardExtension.beforeAll(extensionContext);
 
         // Verify that a test run was started, *and* that all three suites were started.
-        verify(orangebeardClient).startTestItem(eq(rootUUID), any(StartTestItem.class));
+        verify(orangebeardClient).startTestItem(eq(null), any(StartTestItem.class));
         verify(orangebeardClient).startTestItem(eq(suiteUUID), any(StartTestItem.class));
         verify(orangebeardClient).startTestItem(eq(subSuiteUUID), any(StartTestItem.class));
     }
@@ -137,7 +135,6 @@ class OrangebeardExtensionTest {
         when(method.getName()).thenReturn("testName");
 
         UUID testUUID = UUID.fromString("49e7186d-e14d-4eeb-bc29-e36279d3b628");
-        UUID rootUUID = UUID.fromString("342e7cc4-8ac6-4d2a-8659-10bee9060de0");
         UUID suiteUUID = UUID.fromString("27bf84ed-6269-4629-863d-0899078f8196");
         UUID subSuiteUUID = UUID.fromString("e9a6f895-7d8b-4baa-8564-844865567ce5");
         UUID subSubSuiteUUID = UUID.fromString("dfd80d50-b08e-4b77-bacb-eafff569b578");
@@ -147,8 +144,7 @@ class OrangebeardExtensionTest {
         when(extensionContext.getParent()).thenReturn(Optional.of(suiteContext));
         when(extensionContext.getUniqueId()).thenReturn("id");
         when(extensionContext.getRequiredTestMethod()).thenReturn(method);
-        //when(orangebeardClient.startTestItem(any(), any())).thenReturn(testUUID);
-        lenient().when(orangebeardClient.startTestItem(eq(rootUUID), any())).thenReturn(testUUID);
+        lenient().when(orangebeardClient.startTestItem(eq(null), any())).thenReturn(testUUID);
         lenient().when(orangebeardClient.startTestItem(eq(testUUID), any())).thenReturn(suiteUUID);
         lenient().when(orangebeardClient.startTestItem(eq(suiteUUID), any())).thenReturn(subSuiteUUID);
         lenient().when(orangebeardClient.startTestItem(eq(subSuiteUUID), any())).thenReturn(subSubSuiteUUID);
@@ -166,7 +162,6 @@ class OrangebeardExtensionTest {
     public void when_a_test_is_disabled_then_finishItem_is_called() {
         // Set up the constants and the stubs.
         UUID testUUID = UUID.fromString("49e7186d-e14d-4eeb-bc29-e36279d3b628");
-        UUID rootUUID = UUID.fromString("342e7cc4-8ac6-4d2a-8659-10bee9060de0");
         UUID suiteUUID = UUID.fromString("27bf84ed-6269-4629-863d-0899078f8196");
         UUID subSuiteUUID = UUID.fromString("e9a6f895-7d8b-4baa-8564-844865567ce5");
         UUID subSubSuiteUUID = UUID.fromString("dfd80d50-b08e-4b77-bacb-eafff569b578");
@@ -180,7 +175,7 @@ class OrangebeardExtensionTest {
         when(extensionContext.getParent()).thenReturn(Optional.of(suiteContext));
         when(extensionContext.getUniqueId()).thenReturn("id");
 
-        lenient().when(orangebeardClient.startTestItem(eq(rootUUID), any())).thenReturn(testUUID);
+        lenient().when(orangebeardClient.startTestItem(eq(null), any())).thenReturn(testUUID);
         lenient().when(orangebeardClient.startTestItem(eq(testUUID), any())).thenReturn(suiteUUID);
         lenient().when(orangebeardClient.startTestItem(eq(suiteUUID), any())).thenReturn(subSuiteUUID);
         lenient().when(orangebeardClient.startTestItem(eq(subSuiteUUID), any())).thenReturn(subSubSuiteUUID);
@@ -211,20 +206,16 @@ class OrangebeardExtensionTest {
         orangebeardExtension.beforeAll(extensionContext);
         orangebeardExtension.afterAll(extensionContext);
 
-        // Ideally, we would only have one invocation of "startTestItem" in this unit test, not three.
-        // This could be achieved if we could make ExtensionContext.getRequiredTestClass() return a class that is not in a package, or in a top-level package.
-        // It would be even better if we could just mock "OrangebeardExtension.getCanonicalName()", to make it return whatever array we wanted.
-        verify(orangebeardClient, times(3)).finishTestItem(eq(suiteUUID), any(FinishTestItem.class));
+        verify(orangebeardClient).finishTestItem(eq(suiteUUID), any(FinishTestItem.class));
     }
 
     @Test
     public void after_all_test_multiple_suites() {
-        UUID rootUUID = UUID.fromString("342e7cc4-8ac6-4d2a-8659-10bee9060de0");
         UUID suiteUUID = UUID.fromString("27bf84ed-6269-4629-863d-0899078f8196");
         UUID subSuiteUUID = UUID.fromString("e9a6f895-7d8b-4baa-8564-844865567ce5");
         UUID subSubSuiteUUID = UUID.fromString("dfd80d50-b08e-4b77-bacb-eafff569b578");
 
-        lenient().when(orangebeardClient.startTestItem(eq(rootUUID), any())).thenReturn(suiteUUID);
+        lenient().when(orangebeardClient.startTestItem(eq(null), any())).thenReturn(suiteUUID);
         lenient().when(orangebeardClient.startTestItem(eq(suiteUUID), any())).thenReturn(subSuiteUUID);
         lenient().when(orangebeardClient.startTestItem(eq(subSuiteUUID), any())).thenReturn(subSubSuiteUUID);
         when(extensionContext.getUniqueId()).thenReturn("id");
