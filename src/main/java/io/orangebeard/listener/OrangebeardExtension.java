@@ -122,13 +122,20 @@ public class OrangebeardExtension implements
         // The test suites that were started, must now be finished cleanly.
         // After finishing a test suite, it should be removed from the tree.
         // We only remove leaf nodes, because the intermediate nodes may be needed in the next suite of this test run.
+        finishLeafNodes();
+    }
+
+    /**
+     * Finish all tests that don't have child tests, and remove them from the tree.
+     */
+    private void finishLeafNodes() {
         List<TestSuiteTree> leaves = root.getLeaves();
         // If is possible that the root has 0 children; then the root itself is a leaf node.
         // But the root node does not contain tests itself.
         leaves.remove(root);
         for (TestSuiteTree leaf : leaves) {
             UUID suiteId = leaf.getTestSuiteUUID();
-            FinishTestItem finishTestItem = new FinishTestItem(testrunUUID, PASSED, null, null);
+            FinishTestItem finishTestItem = new FinishTestItem(testrunUUID, null, null, null);
             orangebeardClient.finishTestItem(suiteId, finishTestItem);
             leaf.detach();
         }
@@ -224,6 +231,12 @@ public class OrangebeardExtension implements
         this.testrunUUID = orangebeardClient.startTestRun(testRun);
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            // First, remove the remaining intermediate test suites.
+            while (root.hasChildren()) {
+                finishLeafNodes();
+            }
+
+            // Then finish the test run itself.
             FinishTestRun finishTestRun = new FinishTestRun();
             orangebeardClient.finishTestRun(testrunUUID, finishTestRun);
         }));

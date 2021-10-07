@@ -155,7 +155,7 @@ class OrangebeardExtensionTest {
         orangebeardExtension.testFailed(extensionContext, new Exception("message"));
 
         verify(orangebeardClient).startTestItem(eq(subSuiteUUID), any(StartTestItem.class));
-        verify(orangebeardClient).finishTestItem(eq(subSubSuiteUUID), any(FinishTestItem.class)); //TODO?~ Is this correct? Shouldn't we test if subSuiteUUID was finished? Or only subSubSuiteUUID?
+        verify(orangebeardClient).finishTestItem(eq(subSubSuiteUUID), any(FinishTestItem.class));
     }
 
     @Test
@@ -225,8 +225,6 @@ class OrangebeardExtensionTest {
         orangebeardExtension.beforeAll(extensionContext);
         orangebeardExtension.afterAll(extensionContext);
 
-        verify(orangebeardClient).finishTestItem(eq(suiteUUID), any(FinishTestItem.class));
-        verify(orangebeardClient).finishTestItem(eq(subSuiteUUID), any(FinishTestItem.class));
         verify(orangebeardClient).finishTestItem(eq(subSubSuiteUUID), any(FinishTestItem.class));
     }
 }

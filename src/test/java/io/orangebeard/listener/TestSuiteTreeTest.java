@@ -8,6 +8,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
 public class TestSuiteTreeTest {
@@ -111,5 +113,27 @@ public class TestSuiteTreeTest {
         assertThat(leaves).contains(child2);
         assertThat(leaves).doesNotContain(root);
         assertThat(leaves).doesNotContain(child1);
+    }
+
+    @Test
+    public void when_asking_a_leaf_node_if_it_has_children_then_return_false() {
+        String idOfRoot = "096bac26-b9ae-43c3-aec5-1eebd1f96403";
+        TestSuiteTree root = new TestSuiteTree("", "rootID", UUID.fromString(idOfRoot));
+
+        boolean hasChildren = root.hasChildren();
+
+        assertFalse(hasChildren);
+    }
+
+    @Test
+    public void when_asking_a_non_leaf_node_if_it_has_children_then_return_true() {
+        String idOfRoot = "096bac26-b9ae-43c3-aec5-1eebd1f96403";
+        String idOfChild1 = "781c5b1e-a6e5-4ede-9dfd-36f41ed94bec";
+        TestSuiteTree root = new TestSuiteTree("", "rootID", UUID.fromString(idOfRoot));
+        TestSuiteTree child1 = root.addChild("child1", idOfChild1, UUID.fromString(idOfChild1));
+
+        boolean hasChildren = root.hasChildren();
+
+        assertTrue(hasChildren);
     }
 }

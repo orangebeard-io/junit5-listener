@@ -40,6 +40,14 @@ class TestSuiteTree {
     public String getNodeKey() { return nodeKey; }
     public UUID getTestSuiteUUID() { return testSuiteUUID; }
 
+    /**
+     * Test if a node has child nodes.
+     * @return True if and only if the node has child nodes.
+     */
+    public boolean hasChildren() {
+        return !children.isEmpty();
+    }
+
     @Override
     public String toString() {
         return String.format("(%s, %s, %s)", nodeKey, testSuiteName, testSuiteUUID);
