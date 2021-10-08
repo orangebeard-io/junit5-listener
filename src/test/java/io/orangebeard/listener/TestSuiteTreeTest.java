@@ -88,9 +88,9 @@ public class TestSuiteTreeTest {
         // We are testing if a descendant can be found by its key, NOT if it can be found by its UUID.
         TestSuiteTree greatGrandchild1 = grandchild3.addChild("greatGrandchild1", idToFind, UUID.fromString(idOfGreatGrandchild1));
 
-        TestSuiteTree actualResult = root.findSubtree(idToFind);
+        Optional<TestSuiteTree> actualResult = root.findSubtree(idToFind);
 
-        assertThat(actualResult).isEqualTo(greatGrandchild1);
+        assertThat(actualResult.get()).isEqualTo(greatGrandchild1);
     }
 
     @Test

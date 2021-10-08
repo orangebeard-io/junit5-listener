@@ -79,18 +79,16 @@ class TestSuiteTree {
      * @param id Id of the subtree.
      * @return The subtree with the given ID, or <code>null</code> if there is no such subtree.
      */
-    public TestSuiteTree findSubtree(@NonNull String id) {
+    public Optional<TestSuiteTree> findSubtree(@NonNull String id) {
         if (id.equals(nodeKey)) {
-            return this;
+            return Optional.of(this);
         }
 
         for (TestSuiteTree child: children) {
-            TestSuiteTree searchResult = child.findSubtree(id);
-            if (searchResult != null) {
-                return searchResult;
-            }
+            return child.findSubtree(id);
+
         }
-        return null;
+        return Optional.empty();
     }
 
     /**
