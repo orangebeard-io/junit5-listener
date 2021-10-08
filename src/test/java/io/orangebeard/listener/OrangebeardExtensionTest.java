@@ -45,7 +45,6 @@ class OrangebeardExtensionTest {
         UUID testRunUUID = UUID.fromString("49e7186d-e14d-4eeb-bc29-e36279d3b628");
 
         when(orangebeardClient.startTestRun(any(StartTestRun.class))).thenReturn(testRunUUID);
-        //when(extensionContext.getDisplayName()).thenReturn("suitename");
         when(orangebeardClient.startTestItem(any(), any())).thenReturn(UUID.randomUUID());
         when(extensionContext.getRequiredTestClass()).thenReturn((Class) StringBuffer.class);
 

@@ -216,7 +216,7 @@ public class OrangebeardExtension implements
         this.testrunUUID = orangebeardClient.startTestRun(testRun);
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            // First, remove the remaining intermediate test suites.
+            // First, finish the remaining intermediate test suites.
             finishAllSuites();
 
             // Then finish the test run itself.
@@ -230,7 +230,7 @@ public class OrangebeardExtension implements
      */
     private void finishAllSuites() {
         // Finish all test suites, one level at a time.
-        // This way we make sure that test suites are only finished after all their children are fniished.
+        // This way we make sure that test suites are only finished after all their children are finished.
         while (root.hasChildren()) {
             List<TestSuiteTree> leaves = root.getLeaves();
             // If is possible that the root has 0 children; then the root itself is a leaf node.
