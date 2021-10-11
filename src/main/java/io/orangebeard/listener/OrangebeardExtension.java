@@ -52,11 +52,16 @@ public class OrangebeardExtension implements
     private final Map<String, UUID> runningTests = new HashMap<>();
     private UUID testrunUUID;
 
-    /** Arbitrary UUID for the root suite. */
+    /**
+     * Arbitrary UUID for the root suite.
+     * This value is, by necessity, also used in the unit tests.
+     */
     private final UUID rootUUID = UUID.fromString("342e7cc4-8ac6-4d2a-8659-10bee9060de0");
 
-    /** Tree-structure to keep track of the hierarchy of test suites. */
-    private final TestSuiteTree root = new TestSuiteTree("ROOT",rootUUID.toString(), rootUUID);
+    /**
+     * Tree-structure to keep track of the hierarchy of test suites.
+     */
+    private final TestSuiteTree root = new TestSuiteTree("ROOT", rootUUID.toString(), rootUUID);
 
     public OrangebeardExtension() {
         OrangebeardProperties orangebeardProperties = new OrangebeardProperties();
@@ -104,36 +109,44 @@ public class OrangebeardExtension implements
                 // Now that we now the UUID of the parent suite, we can start a new suite as its child.
                 UUID suiteId = orangebeardClient.startTestItem(uuidOfParent, startTestItem);
 
-                // Add a node to the tree for this newly created and started test suite.
-                String key = suiteId.toString();
-                if (i == classNameComponents.length - 1) {
-                    key = extensionContext.getUniqueId();
+                if (suiteId != null) {
+                    // Add a node to the tree for this newly created and started test suite.
+                    String key = suiteId.toString();
+                    if (i == classNameComponents.length - 1) {
+                        key = extensionContext.getUniqueId();
+                    }
+                    currentNode = parentNode.addChild(classNameComponents[i], key, suiteId);
                 }
-                currentNode = Optional.of(parentNode.addChild(classNameComponents[i], key, suiteId));
             }
             // Continue with the next level of the package hierarchy.
-            // At this point, `currentNode` is always filled.
-            parentNode = currentNode.get();
+            if (currentNode.isPresent()) {
+                parentNode = currentNode.get();
+            }
         }
     }
 
     @Override
     public void afterAll(ExtensionContext extensionContext) {
         String id = extensionContext.getUniqueId();
-        TestSuiteTree node = root.findSubtree(id);
-        UUID suiteId = node.getTestSuiteUUID();
-        FinishTestItem finishTestItem = new FinishTestItem(testrunUUID, null, null, null);
-        orangebeardClient.finishTestItem(suiteId, finishTestItem);
+        Optional<TestSuiteTree> node = root.findSubtree(id);
+        if (node.isPresent()) {
+            UUID suiteId = node.get().getTestSuiteUUID();
+            FinishTestItem finishTestItem = new FinishTestItem(testrunUUID, null, null, null);
+            orangebeardClient.finishTestItem(suiteId, finishTestItem);
+        }
     }
 
     @Override
     public void beforeEach(ExtensionContext extensionContext) {
         if (extensionContext.getParent().isPresent()) {
             String parentId = extensionContext.getParent().get().getUniqueId();
-            UUID suiteId = root.findSubtree(parentId).getTestSuiteUUID();
-            StartTestItem test = new StartTestItem(testrunUUID, extensionContext.getDisplayName(), STEP, getCodeRef(extensionContext), null);
-            UUID testId = orangebeardClient.startTestItem(suiteId, test);
-            runningTests.put(extensionContext.getUniqueId(), testId);
+            Optional<TestSuiteTree> node = root.findSubtree(parentId);
+            if (node.isPresent()) {
+                UUID suiteId = node.get().getTestSuiteUUID();
+                StartTestItem test = new StartTestItem(testrunUUID, extensionContext.getDisplayName(), STEP, getCodeRef(extensionContext), null);
+                UUID testId = orangebeardClient.startTestItem(suiteId, test);
+                runningTests.put(extensionContext.getUniqueId(), testId);
+            }
         } else {
             LOGGER.warn("Test with the name [{}] has no parent and therefore could not be reported", extensionContext.getDisplayName());
         }
@@ -152,14 +165,17 @@ public class OrangebeardExtension implements
     public void testDisabled(ExtensionContext extensionContext, Optional<String> reason) {
         if (extensionContext.getParent().isPresent()) {
             String parentId = extensionContext.getParent().get().getUniqueId();
-            UUID suiteId = root.findSubtree(parentId).getTestSuiteUUID();
+            Optional<TestSuiteTree> node = root.findSubtree(parentId);
+            if (node.isPresent()) {
+                UUID suiteId = node.get().getTestSuiteUUID();
 
-            StartTestItem test = new StartTestItem(testrunUUID, extensionContext.getDisplayName(), STEP, getCodeRef(extensionContext), null);
-            UUID testId = orangebeardClient.startTestItem(suiteId, test);
+                StartTestItem test = new StartTestItem(testrunUUID, extensionContext.getDisplayName(), STEP, getCodeRef(extensionContext), null);
+                UUID testId = orangebeardClient.startTestItem(suiteId, test);
 
-            FinishTestItem finishTestItem = new FinishTestItem(testrunUUID, SKIPPED, null, null);
-            reason.ifPresent(s -> orangebeardClient.log(new Log(testrunUUID, testId, warn, s)));
-            orangebeardClient.finishTestItem(testId, finishTestItem);
+                FinishTestItem finishTestItem = new FinishTestItem(testrunUUID, SKIPPED, null, null);
+                reason.ifPresent(s -> orangebeardClient.log(new Log(testrunUUID, testId, warn, s)));
+                orangebeardClient.finishTestItem(testId, finishTestItem);
+            }
         } else {
             LOGGER.warn("Test with the name [{}] has no parent and therefore could not be reported", extensionContext.getDisplayName());
         }
@@ -249,16 +265,17 @@ public class OrangebeardExtension implements
      * Given a class, determine it fully qualified name (canonical name), split into its subpackages.
      * For example, if the input is the Class for "io.orangebeard.test.TestClass", this method will return the array ["io", "orangebeard", "test", "TestClass"].
      * If the input is <code>null</code> (as can happen in a unit test), then it returns an array with 0 elements.
+     *
      * @param clazz The class to analyze.
      * @return The fully qualified name of the class, split into its components. If there is no class (if the input is <code>null</code>), then this method returns an array with 0 elements.
      */
     private static String[] getFullyQualifiedClassName(Class<?> clazz) {
-        String[] fullyQualifiedName = new String[] {};
+        String[] fullyQualifiedName = new String[]{};
         if (clazz != null) {
             fullyQualifiedName = clazz
                     .getCanonicalName()
                     .split("\\.")
-                    ;
+            ;
         }
         return fullyQualifiedName;
     }

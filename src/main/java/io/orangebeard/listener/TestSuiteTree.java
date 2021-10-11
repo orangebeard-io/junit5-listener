@@ -11,21 +11,21 @@ class TestSuiteTree {
     /** Name of the node. Unique among siblings. */
     private final String testSuiteName;
 
-    /** Unique key for test suite at this level.
+    /**
+     * Unique key for test suite at this level.
      * This is usually but not always a UUID.
      */
     private final String nodeKey;
 
     /** UUID for the test suite at this level. */
     private final UUID testSuiteUUID;
-
+    /** Child nodes. */
+    private final List<TestSuiteTree> children = new ArrayList<>();
     /** Reference to the parent node. */
     private TestSuiteTree parent;
 
-    /** Child nodes. */
-    private final List<TestSuiteTree> children = new ArrayList<>();
-
-    /** Construct a new Tree of test suites.
+    /**
+     * Construct a new Tree of test suites.
      * @param name Name of the root node.
      * @param nodeKey Key of the test suite. Often a UUID in String form, but not always.
      * @param testSuiteUUID UUID for the test suite at this level.
@@ -63,34 +63,36 @@ class TestSuiteTree {
      * @param testSuiteUUID UUID of the test suite.
      * @return An Optional containing the newly added node, or an empty Optional if there already was a child node with the given name.
      */
-    public TestSuiteTree addChild(@NonNull String name, @NonNull String nodeKey, @NonNull UUID testSuiteUUID) {
+    public Optional<TestSuiteTree> addChild(@NonNull String name, @NonNull String nodeKey, @NonNull UUID testSuiteUUID) {
         // The field "name" should be unique among the children of a node.
         if (getChildByName(name).isPresent()) {
-            return null;
+            return Optional.empty();
         }
         // If there is not already a child node with the given name, create and add it.
         TestSuiteTree child = new TestSuiteTree(name, nodeKey, testSuiteUUID);
         children.add(child);
         child.parent = this;
-        return child;
+        return Optional.of(child);
     }
 
-    /** Find the subtree that was registered with the given ID.
-     * @param id Id of the subtree.
-     * @return The subtree with the given ID, or <code>null</code> if there is no such subtree.
+    /**
+     * Find the subtree that was registered with the given ID.
+     * @param id ID of the subtree.
+     * @return An Optional containing the subtree with the given ID. If there is no such subtree, returns an empty Optional.
      */
-    public TestSuiteTree findSubtree(@NonNull String id) {
+    public Optional<TestSuiteTree> findSubtree(@NonNull String id) {
         if (id.equals(nodeKey)) {
-            return this;
+            return Optional.of(this);
         }
 
         for (TestSuiteTree child: children) {
-            TestSuiteTree searchResult = child.findSubtree(id);
-            if (searchResult != null) {
+            Optional<TestSuiteTree> searchResult = child.findSubtree(id);
+            if (searchResult.isPresent()) {
                 return searchResult;
             }
         }
-        return null;
+
+        return Optional.empty();
     }
 
     /**
@@ -104,7 +106,7 @@ class TestSuiteTree {
                 .stream()
                 .filter(treeItem->name.equals(treeItem.getName()))
                 .findFirst()
-                ;
+        ;
     }
 
     /**
