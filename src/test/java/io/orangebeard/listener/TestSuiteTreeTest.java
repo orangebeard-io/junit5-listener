@@ -19,12 +19,13 @@ public class TestSuiteTreeTest {
         UUID rootUUID = UUID.fromString("096bac26-b9ae-43c3-aec5-1eebd1f96403");
         UUID childUUID = UUID.fromString("1ee1ddc5-9f95-4ac7-87f3-1e8464b9b096");
         TestSuiteTree root = new TestSuiteTree("", "rootID", rootUUID);
-        TestSuiteTree expected = root.addChild("child", "childID", childUUID);
+        Optional<TestSuiteTree> expected = root.addChild("child", "childID", childUUID);
 
         Optional<TestSuiteTree> child2 = root.getChildByName("child");
 
         assertThat(child2).isPresent();
-        assertThat(child2.get()).isEqualTo(expected);
+        assertThat(expected).isPresent();
+        assertThat(child2.get()).isEqualTo(expected.get());
     }
 
     @Test
@@ -44,12 +45,13 @@ public class TestSuiteTreeTest {
         UUID rootUUID = UUID.fromString("096bac26-b9ae-43c3-aec5-1eebd1f96403");
         UUID childUUID = UUID.fromString("1ee1ddc5-9f95-4ac7-87f3-1e8464b9b096");
         TestSuiteTree root = new TestSuiteTree("", "rootID", rootUUID);
-        TestSuiteTree child = root.addChild("child","childID", childUUID);
+        Optional<TestSuiteTree> child = root.addChild("child","childID", childUUID);
 
         Optional<TestSuiteTree> ref = root.getChildByName("child");
 
         assertThat(ref).isPresent();
-        assertThat(child).isEqualTo(ref.get());
+        assertThat(child).isPresent();
+        assertThat(child.get()).isEqualTo(ref.get());
     }
 
     @Test
@@ -60,9 +62,9 @@ public class TestSuiteTreeTest {
         TestSuiteTree root = new TestSuiteTree("", "rootID", rootUUID);
         root.addChild("child", "childID", child1UUID);
 
-        TestSuiteTree child2 = root.addChild("child", "childID2", child2UUID);
+        Optional<TestSuiteTree> child2 = root.addChild("child", "childID2", child2UUID);
 
-        assertThat(child2).isNull();
+        assertThat(child2).isEmpty();
     }
 
     @Test
@@ -78,19 +80,46 @@ public class TestSuiteTreeTest {
         String idOfGreatGrandchild1 = "f213505f-40da-4644-b76b-d99439a76c74";
 
         TestSuiteTree root = new TestSuiteTree("", "rootID", UUID.fromString(idOfRoot));
-        TestSuiteTree child1 = root.addChild("child1", idOfChild1, UUID.fromString(idOfChild1));
-        child1.addChild("grandchild1", idOfGrandchild1, UUID.fromString(idOfGrandchild1));
-        child1.addChild("grandchild2", idOfGrandchild2, UUID.fromString(idOfGrandchild2));
-        TestSuiteTree child2 = root.addChild("child2", idOfChild2, UUID.fromString(idOfChild2));
-        TestSuiteTree grandchild3 = child2.addChild("grandchild3", idOfGrandchild3, UUID.fromString(idOfGrandchild3));
-        child2.addChild("grandchild4", idOfGrandchild4, UUID.fromString(idOfGrandchild4));
+        Optional<TestSuiteTree> child1 = root.addChild("child1", idOfChild1, UUID.fromString(idOfChild1));
+        assertThat(child1).isPresent(); // Suppress warning. "child1" should not be empty at this point. If it is... we might as well fail the test early.
+        child1.get().addChild("grandchild1", idOfGrandchild1, UUID.fromString(idOfGrandchild1));
+        child1.get().addChild("grandchild2", idOfGrandchild2, UUID.fromString(idOfGrandchild2));
+        Optional<TestSuiteTree> child2 = root.addChild("child2", idOfChild2, UUID.fromString(idOfChild2));
+        assertThat(child2).isPresent(); // Suppress warning. "child2" should not be empty at this point. If it is... we might as well fail the test early.
+        Optional<TestSuiteTree> grandchild3 = child2.get().addChild("grandchild3", idOfGrandchild3, UUID.fromString(idOfGrandchild3));
+        child2.get().addChild("grandchild4", idOfGrandchild4, UUID.fromString(idOfGrandchild4));
         // The node we are looking for, has a UUID that is different from its key. This is intentional!
         // We are testing if a descendant can be found by its key, NOT if it can be found by its UUID.
-        TestSuiteTree greatGrandchild1 = grandchild3.addChild("greatGrandchild1", idToFind, UUID.fromString(idOfGreatGrandchild1));
+        assertThat(grandchild3).isPresent();  // Suppress warning. "grandchild3" should not be empty at this point. If it is... we might as well fail the test early.
+        Optional<TestSuiteTree> greatGrandchild1 = grandchild3.get().addChild("greatGrandchild1", idToFind, UUID.fromString(idOfGreatGrandchild1));
 
         Optional<TestSuiteTree> actualResult = root.findSubtree(idToFind);
 
-        assertThat(actualResult.get()).isEqualTo(greatGrandchild1);
+        assertThat(actualResult).isPresent();
+        assertThat(greatGrandchild1).isPresent();
+        assertThat(actualResult.get()).isEqualTo(greatGrandchild1.get());
+    }
+
+    @Test
+    public void when_a_descendant_cannot_be_found_then_an_empty_optional_is_returned() {
+        String idToFind = "e38edd33-6431-4f66-afe7-d4350c2e4c4c";
+        String idOfRoot = "096bac26-b9ae-43c3-aec5-1eebd1f96403";
+        String idOfChild1 = "781c5b1e-a6e5-4ede-9dfd-36f41ed94bec";
+        String idOfChild2 = "88fba2e8-375b-4f8e-bf20-edf71dbce434";
+        String idOfGrandchild1 = "20c9b62b-5d38-46ba-9172-f7e689870c09";
+        String idOfGrandchild2 = "a595fab8-3876-444f-b48e-7e777bf85d65";
+
+        TestSuiteTree root = new TestSuiteTree("", "rootID", UUID.fromString(idOfRoot));
+        // Adding a few nodes to make the search non-trivial.
+        Optional<TestSuiteTree> child1 = root.addChild("child1", idOfChild1, UUID.fromString(idOfChild1));
+        assertThat(child1).isPresent(); // Suppress warning. "child1" should not be empty at this point. If it is... we might as well fail the test early.
+        child1.get().addChild("grandchild1", idOfGrandchild1, UUID.fromString(idOfGrandchild1));
+        child1.get().addChild("grandchild2", idOfGrandchild2, UUID.fromString(idOfGrandchild2));
+        root.addChild("child2", idOfChild2, UUID.fromString(idOfChild2));
+
+        Optional<TestSuiteTree> actualResult = root.findSubtree(idToFind);
+
+        assertThat(actualResult).isEmpty();
     }
 
     @Test
@@ -101,18 +130,24 @@ public class TestSuiteTreeTest {
         String idOfGrandchild1 = "20c9b62b-5d38-46ba-9172-f7e689870c09";
         String idOfGrandchild2 = "a595fab8-3876-444f-b48e-7e777bf85d65";
         TestSuiteTree root = new TestSuiteTree("", "rootID", UUID.fromString(idOfRoot));
-        TestSuiteTree child1 = root.addChild("child1", idOfChild1, UUID.fromString(idOfChild1));
-        TestSuiteTree grandchild1 = child1.addChild("grandchild1", idOfGrandchild1, UUID.fromString(idOfGrandchild1));
-        TestSuiteTree grandchild2 = child1.addChild("grandchild2", idOfGrandchild2, UUID.fromString(idOfGrandchild2));
-        TestSuiteTree child2 = root.addChild("child2", idOfChild2, UUID.fromString(idOfChild2));
+        Optional<TestSuiteTree> child1 = root.addChild("child1", idOfChild1, UUID.fromString(idOfChild1));
+        assertThat(child1).isPresent(); // Suppress warning. "child1" should not be empty at this point. If it is... we might as well fail the test early.
+        Optional<TestSuiteTree> grandchild1 = child1.get().addChild("grandchild1", idOfGrandchild1, UUID.fromString(idOfGrandchild1));
+        Optional<TestSuiteTree> grandchild2 = child1.get().addChild("grandchild2", idOfGrandchild2, UUID.fromString(idOfGrandchild2));
+        Optional<TestSuiteTree> child2 = root.addChild("child2", idOfChild2, UUID.fromString(idOfChild2));
+
 
         List<TestSuiteTree> leaves = root.getLeaves();
 
-        assertThat(leaves).contains(grandchild1);
-        assertThat(leaves).contains(grandchild2);
-        assertThat(leaves).contains(child2);
+        assertThat(grandchild1).isPresent();
+        assertThat(leaves).contains(grandchild1.get());
+        assertThat(grandchild2).isPresent();
+        assertThat(leaves).contains(grandchild2.get());
+        assertThat(child2).isPresent();
+        assertThat(leaves).contains(child2.get());
         assertThat(leaves).doesNotContain(root);
-        assertThat(leaves).doesNotContain(child1);
+        assertThat(child1).isPresent();
+        assertThat(leaves).doesNotContain(child1.get());
     }
 
     @Test
@@ -130,7 +165,7 @@ public class TestSuiteTreeTest {
         String idOfRoot = "096bac26-b9ae-43c3-aec5-1eebd1f96403";
         String idOfChild1 = "781c5b1e-a6e5-4ede-9dfd-36f41ed94bec";
         TestSuiteTree root = new TestSuiteTree("", "rootID", UUID.fromString(idOfRoot));
-        TestSuiteTree child1 = root.addChild("child1", idOfChild1, UUID.fromString(idOfChild1));
+        root.addChild("child1", idOfChild1, UUID.fromString(idOfChild1));
 
         boolean hasChildren = root.hasChildren();
 

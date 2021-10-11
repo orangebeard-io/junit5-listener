@@ -54,6 +54,7 @@ public class OrangebeardExtension implements
 
     /**
      * Arbitrary UUID for the root suite.
+     * This value is, by necessity, also used in the unit tests.
      */
     private final UUID rootUUID = UUID.fromString("342e7cc4-8ac6-4d2a-8659-10bee9060de0");
 
@@ -114,11 +115,10 @@ public class OrangebeardExtension implements
                     if (i == classNameComponents.length - 1) {
                         key = extensionContext.getUniqueId();
                     }
-                    currentNode = Optional.of(parentNode.addChild(classNameComponents[i], key, suiteId));
+                    currentNode = parentNode.addChild(classNameComponents[i], key, suiteId);
                 }
             }
             // Continue with the next level of the package hierarchy.
-            // At this point, `currentNode` is always filled.
             if (currentNode.isPresent()) {
                 parentNode = currentNode.get();
             }

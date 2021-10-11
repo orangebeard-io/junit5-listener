@@ -65,6 +65,7 @@ class OrangebeardExtensionTest {
 
         when(orangebeardClient.startTestRun(any(StartTestRun.class))).thenReturn(testRunUUID);
         when(extensionContext.getRequiredTestClass()).thenReturn((Class) StringBuffer.class);
+        when(extensionContext.getUniqueId()).thenReturn("id");
         lenient().when(orangebeardClient.startTestItem(eq(null), any())).thenReturn(suiteUUID);
         lenient().when(orangebeardClient.startTestItem(eq(suiteUUID), any())).thenReturn(subSuiteUUID);
         lenient().when(orangebeardClient.startTestItem(eq(subSuiteUUID), any())).thenReturn(subSubSuiteUUID);
