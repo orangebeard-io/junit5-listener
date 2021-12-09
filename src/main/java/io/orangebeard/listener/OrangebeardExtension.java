@@ -2,7 +2,7 @@ package io.orangebeard.listener;
 
 import io.orangebeard.client.OrangebeardClient;
 import io.orangebeard.client.OrangebeardProperties;
-import io.orangebeard.client.OrangebeardV1Client;
+import io.orangebeard.client.OrangebeardV2Client;
 import io.orangebeard.client.entity.FinishTestItem;
 import io.orangebeard.client.entity.FinishTestRun;
 import io.orangebeard.client.entity.Log;
@@ -67,7 +67,7 @@ public class OrangebeardExtension implements
         OrangebeardProperties orangebeardProperties = new OrangebeardProperties();
         orangebeardProperties.checkPropertiesArePresent();
 
-        this.orangebeardClient = new OrangebeardV1Client(
+        this.orangebeardClient = new OrangebeardV2Client(
                 orangebeardProperties.getEndpoint(),
                 orangebeardProperties.getAccessToken(),
                 orangebeardProperties.getProjectName(),
