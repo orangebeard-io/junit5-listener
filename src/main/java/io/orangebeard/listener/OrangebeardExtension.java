@@ -202,7 +202,7 @@ public class OrangebeardExtension implements
         }
 
         FinishTestItem finishTestItem = new FinishTestItem(testrunUUID, FAILED);
-        orangebeardClient.log(new Log(testrunUUID, testId, error, cause.getMessage(),PLAIN_TEXT));
+        orangebeardClient.log(new Log(testrunUUID, testId, error, cause.getMessage(), PLAIN_TEXT));
         orangebeardClient.log(new Log(testrunUUID, testId, info, ExceptionUtils.getStackTrace(cause), PLAIN_TEXT));
 
         orangebeardClient.finishTestItem(testId, finishTestItem);
