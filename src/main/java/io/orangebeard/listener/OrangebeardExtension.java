@@ -139,7 +139,7 @@ public class OrangebeardExtension implements
     @Override
     public void beforeEach(ExtensionContext extensionContext) {
         if (extensionContext.getParent().isPresent()) {
-            String parentId = extensionContext.getParent().get().getUniqueId();
+            String parentId = getParentId(extensionContext.getParent().get());
             Optional<TestSuiteTree> node = root.findSubtree(parentId);
             if (node.isPresent()) {
                 UUID suiteId = node.get().getTestSuiteUUID();
@@ -164,7 +164,7 @@ public class OrangebeardExtension implements
     @Override
     public void testDisabled(ExtensionContext extensionContext, Optional<String> reason) {
         if (extensionContext.getParent().isPresent()) {
-            String parentId = extensionContext.getParent().get().getUniqueId();
+            String parentId = getParentId(extensionContext);
             Optional<TestSuiteTree> node = root.findSubtree(parentId);
             if (node.isPresent()) {
                 UUID suiteId = node.get().getTestSuiteUUID();
@@ -259,6 +259,14 @@ public class OrangebeardExtension implements
                 leaf.detach();
             }
         }
+    }
+
+    private static String getParentId(ExtensionContext parentContext) {
+            String parentId = parentContext.getUniqueId();
+            if(parentId.contains("[test-template:")) {
+                parentId = parentId.substring(0, parentId.indexOf("[test-template:") - 1);
+            }
+            return parentId;
     }
 
     /**
