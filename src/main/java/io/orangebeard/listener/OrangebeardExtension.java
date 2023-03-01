@@ -6,6 +6,7 @@ import io.orangebeard.client.OrangebeardV2Client;
 import io.orangebeard.client.entity.FinishTestItem;
 import io.orangebeard.client.entity.FinishTestRun;
 import io.orangebeard.client.entity.Log;
+import io.orangebeard.client.entity.LogFormat;
 import io.orangebeard.client.entity.StartTestItem;
 import io.orangebeard.client.entity.StartTestRun;
 import io.orangebeard.client.entity.Status;
@@ -173,7 +174,7 @@ public class OrangebeardExtension implements
                 UUID testId = orangebeardClient.startTestItem(suiteId, test);
 
                 FinishTestItem finishTestItem = new FinishTestItem(testrunUUID, SKIPPED, null, null);
-                reason.ifPresent(s -> orangebeardClient.log(new Log(testrunUUID, testId, warn, s)));
+                reason.ifPresent(s -> orangebeardClient.log(new Log(testrunUUID, testId, warn, s, LogFormat.PLAIN_TEXT)));
                 orangebeardClient.finishTestItem(testId, finishTestItem);
             }
         } else {
@@ -201,8 +202,8 @@ public class OrangebeardExtension implements
         }
 
         FinishTestItem finishTestItem = new FinishTestItem(testrunUUID, FAILED, null, null);
-        orangebeardClient.log(new Log(testrunUUID, testId, error, cause.getMessage()));
-        orangebeardClient.log(new Log(testrunUUID, testId, info, ExceptionUtils.getStackTrace(cause)));
+        orangebeardClient.log(new Log(testrunUUID, testId, error, cause.getMessage(), LogFormat.PLAIN_TEXT));
+        orangebeardClient.log(new Log(testrunUUID, testId, info, ExceptionUtils.getStackTrace(cause), LogFormat.PLAIN_TEXT));
 
         orangebeardClient.finishTestItem(testId, finishTestItem);
     }
@@ -214,8 +215,8 @@ public class OrangebeardExtension implements
 
         if (extensionContext.getExecutionException().isPresent()) {
             Throwable throwable = extensionContext.getExecutionException().get();
-            orangebeardClient.log(new Log(testrunUUID, testId, warn, throwable.getMessage()));
-            orangebeardClient.log(new Log(testrunUUID, testId, warn, ExceptionUtils.getStackTrace(throwable)));
+            orangebeardClient.log(new Log(testrunUUID, testId, warn, throwable.getMessage(), LogFormat.PLAIN_TEXT));
+            orangebeardClient.log(new Log(testrunUUID, testId, warn, ExceptionUtils.getStackTrace(throwable), LogFormat.PLAIN_TEXT));
         }
     }
 
