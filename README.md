@@ -63,6 +63,11 @@ For general usage of the extension, add or modify the surefire plugin:
 </plugin>
 ```
 
+Alternatively (or for use with your IDE), add `junit-platform.properties` containing:
+```properties
+junit.jupiter.extensions.autodetection.enabled = true
+```
+
 You can choose to extend individual classes with the extension class:
 
 ```java
