@@ -26,9 +26,7 @@ import org.junit.platform.commons.util.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.time.ZonedDateTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -44,9 +42,9 @@ public class OrangebeardExtension implements
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OrangebeardExtension.class);
 
-    private final OrangebeardAsyncV3Client orangebeardClient;
-    private final Map<String, UUID> runningTests = new HashMap<>();
+    private final OrangebeardContext runContext = OrangebeardContext.getInstance();
     private UUID testrunUUID;
+
 
     /**
      * Arbitrary UUID for the root suite.
@@ -62,16 +60,18 @@ public class OrangebeardExtension implements
     public OrangebeardExtension() {
         OrangebeardProperties orangebeardProperties = new OrangebeardProperties();
         orangebeardProperties.checkPropertiesArePresent();
-
-        this.orangebeardClient = new OrangebeardAsyncV3Client(orangebeardProperties);
-
+        if (runContext.getClient() == null) {
+            runContext.setClient(new OrangebeardAsyncV3Client(orangebeardProperties));
+        }
         startTestRunAndAddShutdownHook(orangebeardProperties);
+        this.testrunUUID = runContext.getTestRunUUID();
     }
 
     OrangebeardExtension(OrangebeardAsyncV3Client orangebeardClient) {
         OrangebeardProperties orangebeardProperties = new OrangebeardProperties();
-        this.orangebeardClient = orangebeardClient;
+        runContext.setClient(orangebeardClient);
         startTestRunAndAddShutdownHook(orangebeardProperties);
+        this.testrunUUID = runContext.getTestRunUUID();
     }
 
     @Override
@@ -97,7 +97,7 @@ public class OrangebeardExtension implements
                 }
 
                 StartSuite startSuite = new StartSuite(testrunUUID, parentSuiteUuid, null, null, List.of(classNameComponents[i]));
-                UUID suiteId = orangebeardClient.startSuite(startSuite).get(0);
+                UUID suiteId = runContext.getClient().startSuite(startSuite).get(0);
 
                 if (suiteId != null) {
                     // Add a node to the tree for this newly created and started test suite.
@@ -128,8 +128,8 @@ public class OrangebeardExtension implements
             if (node.isPresent()) {
                 UUID suiteId = node.get().getTestSuiteUUID();
                 StartTest startTest = new StartTest(testrunUUID, suiteId, extensionContext.getDisplayName(), TestType.TEST, getCodeRef(extensionContext), null, ZonedDateTime.now());
-                UUID testId = orangebeardClient.startTest(startTest);
-                runningTests.put(extensionContext.getUniqueId(), testId);
+                UUID testId = runContext.getClient().startTest(startTest);
+                runContext.addTest(extensionContext.getUniqueId(), testId);
             }
         } else {
             LOGGER.warn("Test with the name [{}] has no parent and therefore could not be reported", extensionContext.getDisplayName());
@@ -146,6 +146,7 @@ public class OrangebeardExtension implements
         //Optional after execution actions
     }
 
+
     @Override
     public void testDisabled(ExtensionContext extensionContext, Optional<String> reason) {
         if (extensionContext.getParent().isPresent()) {
@@ -155,11 +156,11 @@ public class OrangebeardExtension implements
                 UUID suiteId = node.get().getTestSuiteUUID();
 
                 StartTest startTest = new StartTest(testrunUUID, suiteId, extensionContext.getDisplayName(), TestType.TEST, getCodeRef(extensionContext), null, ZonedDateTime.now());
-                UUID testId = orangebeardClient.startTest(startTest);
+                UUID testId = runContext.getClient().startTest(startTest);
 
                 FinishTest finishTest = new FinishTest(testrunUUID, TestStatus.SKIPPED, ZonedDateTime.now());
-                reason.ifPresent(s -> orangebeardClient.log(new Log(testrunUUID, testId, null, s, LogLevel.WARN, ZonedDateTime.now(), LogFormat.PLAIN_TEXT)));
-                orangebeardClient.finishTest(testId, finishTest);
+                reason.ifPresent(s -> runContext.getClient().log(new Log(testrunUUID, testId, null, s, LogLevel.WARN, ZonedDateTime.now(), LogFormat.PLAIN_TEXT)));
+                runContext.getClient().finishTest(testId, finishTest);
             }
         } else {
             LOGGER.warn("Test with the name [{}] has no parent and therefore could not be reported", extensionContext.getDisplayName());
@@ -178,32 +179,32 @@ public class OrangebeardExtension implements
 
     @Override
     public void testFailed(ExtensionContext extensionContext, Throwable cause) {
-        UUID testId = runningTests.get(extensionContext.getUniqueId());
+        UUID testId = runContext.getTestId(extensionContext.getUniqueId());
         if (testId == null) {
             // probably, a test failed before it was properly started (initialization issue). Start the test and fail it immediately.
             beforeEach(extensionContext);
-            testId = runningTests.get(extensionContext.getUniqueId());
+            testId = runContext.getTestId(extensionContext.getUniqueId());
         }
 
         FinishTest finishTest = new FinishTest(testrunUUID, TestStatus.FAILED, ZonedDateTime.now());
 
-        orangebeardClient.log(new Log(testrunUUID, testId, null,  cause.getMessage(), LogLevel.ERROR, ZonedDateTime.now(), LogFormat.PLAIN_TEXT));
-        orangebeardClient.log(new Log(testrunUUID, testId, null, ExceptionUtils.readStackTrace(cause), LogLevel.INFO, ZonedDateTime.now(), LogFormat.PLAIN_TEXT));
+        runContext.getClient().log(new Log(testrunUUID, testId, null,  cause.getMessage(), LogLevel.ERROR, ZonedDateTime.now(), LogFormat.PLAIN_TEXT));
+        runContext.getClient().log(new Log(testrunUUID, testId, null, ExceptionUtils.readStackTrace(cause), LogLevel.INFO, ZonedDateTime.now(), LogFormat.PLAIN_TEXT));
 
-        orangebeardClient.finishTest(testId, finishTest);
+        runContext.getClient().finishTest(testId, finishTest);
     }
 
     private void reportTestResult(ExtensionContext extensionContext, TestStatus status) {
-        UUID testId = runningTests.get(extensionContext.getUniqueId());
+        UUID testId = runContext.getTestId(extensionContext.getUniqueId());
         FinishTest finishTest = new FinishTest(testrunUUID, status, ZonedDateTime.now());
 
         if (extensionContext.getExecutionException().isPresent()) {
             Throwable cause = extensionContext.getExecutionException().get();
 
-            orangebeardClient.log(new Log(testrunUUID, testId, null,  cause.getMessage(), LogLevel.WARN, ZonedDateTime.now(), LogFormat.PLAIN_TEXT));
-            orangebeardClient.log(new Log(testrunUUID, testId, null, ExceptionUtils.readStackTrace(cause), LogLevel.WARN, ZonedDateTime.now(), LogFormat.PLAIN_TEXT));
+            runContext.getClient().log(new Log(testrunUUID, testId, null,  cause.getMessage(), LogLevel.WARN, ZonedDateTime.now(), LogFormat.PLAIN_TEXT));
+            runContext.getClient().log(new Log(testrunUUID, testId, null, ExceptionUtils.readStackTrace(cause), LogLevel.WARN, ZonedDateTime.now(), LogFormat.PLAIN_TEXT));
         }
-        orangebeardClient.finishTest(testId, finishTest);
+        runContext.getClient().finishTest(testId, finishTest);
     }
 
     private String getCodeRef(ExtensionContext extensionContext) {
@@ -216,13 +217,13 @@ public class OrangebeardExtension implements
 
     private void startTestRunAndAddShutdownHook(OrangebeardProperties orangebeardProperties) {
         StartV3TestRun testRun = new StartV3TestRun(orangebeardProperties.getTestSetName(), orangebeardProperties.getDescription(), orangebeardProperties.getAttributes());
-        this.testrunUUID = orangebeardClient.startTestRun(testRun);
-
+        this.testrunUUID = runContext.getClient().startTestRun(testRun);
+        runContext.setTestRunUUID(testrunUUID);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 
             // Then finish the test run itself.
             FinishV3TestRun finishTestRun = new FinishV3TestRun();
-            orangebeardClient.finishTestRun(testrunUUID, finishTestRun);
+            runContext.getClient().finishTestRun(testrunUUID, finishTestRun);
         }));
     }
 

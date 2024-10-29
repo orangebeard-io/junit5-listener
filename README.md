@@ -68,7 +68,11 @@ Alternatively (or for use with your IDE), add `junit-platform.properties` contai
 junit.jupiter.extensions.autodetection.enabled = true
 ```
 
-You can choose to extend individual classes with the extension class:
+To also use the execution listener, so ReportEntries can be captured and reported, add
+`test/java/resources/META-INF/services/org.junit.platform.launcher.TestExecutionListener` and set its content to:
+`io.orangebeard.listener.OrangebeardExecutionListener`
+
+You can also choose to extend individual classes with the extension class:
 
 ```java
 @ExtendWith(OrangebeardExtension.class)
