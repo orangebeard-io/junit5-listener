@@ -4,7 +4,7 @@ import io.orangebeard.client.v3.OrangebeardAsyncV3Client;
 
 import lombok.Getter;
 import lombok.Setter;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -12,7 +12,7 @@ public class OrangebeardContext {
     @Getter
     private static final OrangebeardContext instance = new OrangebeardContext();
 
-    private final Map<String, UUID> tests = new HashMap<>();
+    private final Map<String, UUID> tests = new ConcurrentHashMap<>();
 
     @Getter @Setter
     private OrangebeardAsyncV3Client client = null;
@@ -25,10 +25,12 @@ public class OrangebeardContext {
     }
 
     public void addTest(String identifier, UUID testId) {
-        instance.tests.put(identifier, testId);
+        if (identifier != null && testId != null) {
+            instance.tests.put(identifier, testId);
+        }
     }
 
     public UUID getTestId(String identifier) {
-        return instance.tests.get(identifier);
+        return identifier == null ? null : instance.tests.get(identifier);
     }
 }

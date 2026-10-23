@@ -22,9 +22,10 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.Extension;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestWatcher;
-import org.junit.platform.commons.util.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -150,7 +151,7 @@ public class OrangebeardExtension implements
     @Override
     public void testDisabled(ExtensionContext extensionContext, Optional<String> reason) {
         if (extensionContext.getParent().isPresent()) {
-            String parentId = getParentId(extensionContext);
+            String parentId = getParentId(extensionContext.getParent().get());
             Optional<TestSuiteTree> node = root.findSubtree(parentId);
             if (node.isPresent()) {
                 UUID suiteId = node.get().getTestSuiteUUID();
@@ -189,7 +190,7 @@ public class OrangebeardExtension implements
         FinishTest finishTest = new FinishTest(testrunUUID, TestStatus.FAILED, ZonedDateTime.now());
 
         runContext.getClient().log(new Log(testrunUUID, testId, null,  cause.getMessage(), LogLevel.ERROR, ZonedDateTime.now(), LogFormat.PLAIN_TEXT));
-        runContext.getClient().log(new Log(testrunUUID, testId, null, ExceptionUtils.readStackTrace(cause), LogLevel.INFO, ZonedDateTime.now(), LogFormat.PLAIN_TEXT));
+        runContext.getClient().log(new Log(testrunUUID, testId, null, stackTrace(cause), LogLevel.INFO, ZonedDateTime.now(), LogFormat.PLAIN_TEXT));
 
         runContext.getClient().finishTest(testId, finishTest);
     }
@@ -202,7 +203,7 @@ public class OrangebeardExtension implements
             Throwable cause = extensionContext.getExecutionException().get();
 
             runContext.getClient().log(new Log(testrunUUID, testId, null,  cause.getMessage(), LogLevel.WARN, ZonedDateTime.now(), LogFormat.PLAIN_TEXT));
-            runContext.getClient().log(new Log(testrunUUID, testId, null, ExceptionUtils.readStackTrace(cause), LogLevel.WARN, ZonedDateTime.now(), LogFormat.PLAIN_TEXT));
+            runContext.getClient().log(new Log(testrunUUID, testId, null, stackTrace(cause), LogLevel.WARN, ZonedDateTime.now(), LogFormat.PLAIN_TEXT));
         }
         runContext.getClient().finishTest(testId, finishTest);
     }
@@ -227,6 +228,12 @@ public class OrangebeardExtension implements
         }));
     }
 
+    private static String stackTrace(Throwable throwable) {
+        StringWriter writer = new StringWriter();
+        throwable.printStackTrace(new PrintWriter(writer));
+        return writer.toString();
+    }
+
     private static String getParentId(ExtensionContext parentContext) {
         String parentId = parentContext.getUniqueId();
         if (parentId.contains("[test-template:")) {
@@ -247,7 +254,7 @@ public class OrangebeardExtension implements
         String[] fullyQualifiedName = new String[]{};
         if (clazz != null) {
             fullyQualifiedName = clazz
-                    .getCanonicalName()
+                    .getName().replace('$', '.')
                     .split("\\.")
             ;
         }

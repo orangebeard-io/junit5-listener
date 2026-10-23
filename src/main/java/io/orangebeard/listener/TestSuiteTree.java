@@ -1,6 +1,6 @@
 package io.orangebeard.listener;
 
-import org.springframework.lang.NonNull;
+import lombok.NonNull;
 
 import java.util.ArrayList;
 import java.util.List;
