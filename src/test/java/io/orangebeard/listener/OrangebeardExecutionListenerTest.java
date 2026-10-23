@@ -1,71 +1,75 @@
 package io.orangebeard.listener;
 
+import io.orangebeard.client.entity.LogFormat;
 import io.orangebeard.client.entity.log.Log;
-
-import io.orangebeard.client.v3.OrangebeardAsyncV3Client;
-
+import io.orangebeard.client.entity.log.LogLevel;
+import io.orangebeard.client.v3.V3Client;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.platform.engine.reporting.ReportEntry;
 import org.junit.platform.launcher.TestIdentifier;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
-import java.util.HashMap;
-import java.util.Map;
+
 import java.util.UUID;
 
-import static io.orangebeard.client.entity.LogFormat.PLAIN_TEXT;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@ExtendWith({MockitoExtension.class})
 class OrangebeardExecutionListenerTest {
+    private final OrangebeardContext context = OrangebeardContext.getInstance();
+    private final V3Client client = mock(V3Client.class);
+    private final TestIdentifier testIdentifier = mock(TestIdentifier.class);
 
-    @Mock
-    private OrangebeardAsyncV3Client orangebeardClient;
+    @BeforeEach
+    void setUp() {
+        context.reset();
+        context.setClient(client);
+        when(testIdentifier.getUniqueId()).thenReturn("[test:uniqueId]");
+    }
 
-    @Mock
-    private OrangebeardContext orangebeardContext;
-
-    @Mock
-    private TestIdentifier testIdentifier;
-
-    @Mock
-    private ReportEntry entry;
+    @AfterEach
+    void tearDown() {
+        context.reset();
+    }
 
     @Test
-    void reporting_entry_is_published_as_log() {
-        String uniqueId = "[test:uniqueId]";
+    void a_published_report_entry_is_logged_to_the_test() {
+        UUID run = UUID.randomUUID();
+        UUID test = UUID.randomUUID();
+        context.setTestRunUUID(run);
+        context.addTest("[test:uniqueId]", test);
 
-        String entryString = "Test: Entry\n";
-        Map<String, String> entryAsMap = new HashMap<>();
-        entryAsMap.put("Test", "Entry");
+        new OrangebeardExecutionListener().reportingEntryPublished(testIdentifier, ReportEntry.from("Test", "Entry"));
 
-        try (MockedStatic<OrangebeardContext> contextMockedStatic = Mockito.mockStatic(OrangebeardContext.class)) {
-            contextMockedStatic.when(OrangebeardContext::getInstance).thenReturn(orangebeardContext);
+        ArgumentCaptor<Log> log = ArgumentCaptor.forClass(Log.class);
+        verify(client).log(log.capture());
+        assertThat(log.getValue().getMessage()).isEqualTo("Test: Entry\n");
+        assertThat(log.getValue().getLogFormat()).isEqualTo(LogFormat.PLAIN_TEXT);
+        assertThat(log.getValue().getLogLevel()).isEqualTo(LogLevel.INFO);
+        assertThat(log.getValue().getTestRunUUID()).isEqualTo(run);
+        assertThat(log.getValue().getTestUUID()).isEqualTo(test);
+    }
 
-            when(testIdentifier.getUniqueId()).thenReturn(uniqueId);
-            when(entry.getKeyValuePairs()).thenReturn(entryAsMap);
+    @Test
+    void entries_for_tests_that_are_not_reported_are_ignored() {
+        context.setTestRunUUID(UUID.randomUUID());
 
-            when(orangebeardContext.getTestRunUUID()).thenReturn(UUID.randomUUID());
-            when(orangebeardContext.getTestId(any())).thenReturn(UUID.randomUUID());
-            when(orangebeardContext.getClient()).thenReturn(orangebeardClient);
+        new OrangebeardExecutionListener().reportingEntryPublished(testIdentifier, ReportEntry.from("Test", "Entry"));
 
-            OrangebeardExecutionListener orangebeardExecutionListener = new OrangebeardExecutionListener();
-            orangebeardExecutionListener.reportingEntryPublished(testIdentifier, entry);
+        verify(client, never()).log(any());
+    }
 
-            ArgumentCaptor<Log> argument = ArgumentCaptor.forClass(Log.class);
-            verify(orangebeardClient).log(argument.capture());
-            assertEquals(entryString, argument.getValue().getMessage());
-            assertEquals(PLAIN_TEXT, argument.getValue().getLogFormat());
+    @Test
+    void entries_are_ignored_while_there_is_no_test_run() {
+        context.addTest("[test:uniqueId]", UUID.randomUUID());
 
-            verify(orangebeardClient, times(1)).log(any(Log.class));
-        }
+        new OrangebeardExecutionListener().reportingEntryPublished(testIdentifier, ReportEntry.from("Test", "Entry"));
+
+        verify(client, never()).log(any());
     }
 }
