@@ -8,8 +8,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
 public class TestSuiteTreeTest {
@@ -123,52 +121,41 @@ public class TestSuiteTreeTest {
     }
 
     @Test
-    public void when_leaves_are_requested_then_only_nodes_without_children_are_returned() {
-        String idOfRoot = "096bac26-b9ae-43c3-aec5-1eebd1f96403";
-        String idOfChild1 = "781c5b1e-a6e5-4ede-9dfd-36f41ed94bec";
-        String idOfChild2 = "88fba2e8-375b-4f8e-bf20-edf71dbce434";
-        String idOfGrandchild1 = "20c9b62b-5d38-46ba-9172-f7e689870c09";
-        String idOfGrandchild2 = "a595fab8-3876-444f-b48e-7e777bf85d65";
-        TestSuiteTree root = new TestSuiteTree("", "rootID", UUID.fromString(idOfRoot));
-        Optional<TestSuiteTree> child1 = root.addChild("child1", idOfChild1, UUID.fromString(idOfChild1));
-        assertThat(child1).isPresent(); // Suppress warning. "child1" should not be empty at this point. If it is... we might as well fail the test early.
-        Optional<TestSuiteTree> grandchild1 = child1.get().addChild("grandchild1", idOfGrandchild1, UUID.fromString(idOfGrandchild1));
-        Optional<TestSuiteTree> grandchild2 = child1.get().addChild("grandchild2", idOfGrandchild2, UUID.fromString(idOfGrandchild2));
-        Optional<TestSuiteTree> child2 = root.addChild("child2", idOfChild2, UUID.fromString(idOfChild2));
+    public void a_subtree_search_does_not_find_siblings_or_ancestors() {
+        TestSuiteTree root = new TestSuiteTree("", "root", UUID.randomUUID());
+        TestSuiteTree child1 = root.addChild("child1", "k1", UUID.randomUUID()).orElseThrow();
+        TestSuiteTree child2 = root.addChild("child2", "k2", UUID.randomUUID()).orElseThrow();
+        TestSuiteTree grandchild = child1.addChild("grandchild", "k3", UUID.randomUUID()).orElseThrow();
 
-
-        List<TestSuiteTree> leaves = root.getLeaves();
-
-        assertThat(grandchild1).isPresent();
-        assertThat(leaves).contains(grandchild1.get());
-        assertThat(grandchild2).isPresent();
-        assertThat(leaves).contains(grandchild2.get());
-        assertThat(child2).isPresent();
-        assertThat(leaves).contains(child2.get());
-        assertThat(leaves).doesNotContain(root);
-        assertThat(child1).isPresent();
-        assertThat(leaves).doesNotContain(child1.get());
+        assertThat(child1.findSubtree("k3")).containsSame(grandchild);
+        assertThat(child1.findSubtree("k1")).containsSame(child1);
+        assertThat(child1.findSubtree("k2")).isEmpty();
+        assertThat(child2.findSubtree("k3")).isEmpty();
+        assertThat(grandchild.findSubtree("root")).isEmpty();
+        assertThat(root.findSubtree("k2")).containsSame(child2);
     }
 
     @Test
-    public void when_asking_a_leaf_node_if_it_has_children_then_return_false() {
-        String idOfRoot = "096bac26-b9ae-43c3-aec5-1eebd1f96403";
-        TestSuiteTree root = new TestSuiteTree("", "rootID", UUID.fromString(idOfRoot));
+    public void adding_the_same_child_from_many_threads_adds_it_once() throws Exception {
+        TestSuiteTree root = new TestSuiteTree("", "root", UUID.randomUUID());
+        int threads = 8;
+        java.util.concurrent.ExecutorService executor = java.util.concurrent.Executors.newFixedThreadPool(threads);
+        java.util.concurrent.CountDownLatch go = new java.util.concurrent.CountDownLatch(1);
+        List<java.util.concurrent.Future<Boolean>> results = new java.util.ArrayList<>();
+        for (int i = 0; i < threads; i++) {
+            String key = "key-" + i;
+            results.add(executor.submit(() -> {
+                go.await();
+                return root.addChild("same-name", key, UUID.randomUUID()).isPresent();
+            }));
+        }
+        go.countDown();
+        int added = 0;
+        for (java.util.concurrent.Future<Boolean> result : results) {
+            added += result.get() ? 1 : 0;
+        }
+        executor.shutdown();
 
-        boolean hasChildren = root.hasChildren();
-
-        assertFalse(hasChildren);
-    }
-
-    @Test
-    public void when_asking_a_non_leaf_node_if_it_has_children_then_return_true() {
-        String idOfRoot = "096bac26-b9ae-43c3-aec5-1eebd1f96403";
-        String idOfChild1 = "781c5b1e-a6e5-4ede-9dfd-36f41ed94bec";
-        TestSuiteTree root = new TestSuiteTree("", "rootID", UUID.fromString(idOfRoot));
-        root.addChild("child1", idOfChild1, UUID.fromString(idOfChild1));
-
-        boolean hasChildren = root.hasChildren();
-
-        assertTrue(hasChildren);
+        assertThat(added).isEqualTo(1);
     }
 }

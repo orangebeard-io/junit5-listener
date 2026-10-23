@@ -13,7 +13,7 @@
       alt="MVN Version" />
   </a>
   <a href="https://github.com/orangebeard-io/junit5-listener/actions">
-    <img src="https://img.shields.io/github/workflow/status/orangebeard-io/junit5-listener/release?style=flat-square"
+    <img src="https://img.shields.io/github/actions/workflow/status/orangebeard-io/junit5-listener/master.yml?branch=master&style=flat-square"
       alt="Build Status" />
   </a>
   <a href="https://github.com/orangebeard-io/junit5-listener/blob/master/LICENSE.txt">
@@ -29,6 +29,22 @@
     <a href="#configuration">Configuration</a>
   </h4>
 </div>
+
+## Requirements
+
+- Java 17 or newer
+- JUnit 5 (5.10 or newer) **or JUnit 6** - the listener is built against JUnit 6 and its test suite passes on both
+- An Orangebeard instance and an access token for your project
+
+## What is reported
+
+- Every test class becomes a (nested) suite named after its package and class; `@Nested` classes become sub-suites.
+- Every test method becomes a test with its result: passed, failed, stopped (aborted/assumption failed) or skipped (disabled, with the reason as a log).
+- For failed and aborted tests, the exception message and stack trace are added to the test as logs.
+- A failing `@BeforeAll` or `@AfterAll` method is reported as a failed `Class setup (@BeforeAll)` / `Class teardown (@AfterAll)` test in the class' suite, so a class that did not run does not go unnoticed.
+- The test run is finished as soon as JUnit has finished the test plan (with a shutdown hook as fallback).
+- Reporting is asynchronous: your tests are not slowed down by the connection to Orangebeard, and tests keep running if Orangebeard cannot be reached.
+- Parallel test execution is supported.
 
 ## Installation
 
@@ -52,7 +68,7 @@ For general usage of the extension, add or modify the surefire plugin:
 <plugin>
     <groupId>org.apache.maven.plugins</groupId>
     <artifactId>maven-surefire-plugin</artifactId>
-    <version>2.22.2</version>
+    <version>3.6.0</version>
     <configuration>
         <properties>
             <configurationParameters>
@@ -69,19 +85,22 @@ junit.jupiter.extensions.autodetection.enabled = true
 ```
 
 To also use the execution listener, so ReportEntries can be captured and reported, add
-`test/java/resources/META-INF/services/org.junit.platform.launcher.TestExecutionListener` and set its content to:
+`src/test/resources/META-INF/services/org.junit.platform.launcher.TestExecutionListener` and set its content to:
 `io.orangebeard.listener.OrangebeardExecutionListener`
 
 You can also choose to extend individual classes with the extension class:
 
 ```java
 @ExtendWith(OrangebeardExtension.class)
-public YourTestClass {
+public class YourTestClass {
   ...
 }
 ```
 
-Create a new file named `orangebeard.properties` in the test resources folder. Add the following properties:
+Configure the connection with Orangebeard, preferably with environment variables or system properties (see below), so that
+the access token does not end up in your repository. The properties can also be put in a file named `orangebeard.properties`
+in the test resources folder. Only do that for properties that are not secret, or keep that file out of version control.
+The following properties are supported:
 
 ```properties
 orangebeard.endpoint=<ORANGEBEARD-ENDPOINT>
@@ -98,3 +117,10 @@ orangebeard.attributes=key:value; value;
 
 The properties above can be set as environment variables as well. Environment variables will override property values. In the environment variables, it is allowed to replace the dot by an underscore.
 for example: ```orangebeard_endpoint``` as an environment variable will work as well.
+
+### Security notes
+
+- Keep the access token out of version control: provide it with an environment variable or CI secret.
+- Use an `https` endpoint. The token is sent with every request.
+- Exception messages, stack traces and report entries of your tests are sent to Orangebeard as they are. Make sure
+  tests do not put secrets (passwords, tokens) in assertion messages or output.

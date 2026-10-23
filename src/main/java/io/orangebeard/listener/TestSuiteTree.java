@@ -1,12 +1,19 @@
 package io.orangebeard.listener;
 
-import org.springframework.lang.NonNull;
+import lombok.NonNull;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Tree of the test suites that were started in Orangebeard, used to find the suite a test belongs to.
+ * All nodes of a tree share one index (node key to node) and one lock, so the tree can be used from the
+ * threads that JUnit uses for parallel execution, and lookups by key do not need to walk the tree.
+ */
 class TestSuiteTree {
     /** Name of the node. Unique among siblings. */
     private final String testSuiteName;
@@ -21,6 +28,8 @@ class TestSuiteTree {
     private final UUID testSuiteUUID;
     /** Child nodes. */
     private final List<TestSuiteTree> children = new ArrayList<>();
+    /** Node key to node, for all nodes in the tree. Also the lock that guards the whole tree. */
+    private final Map<String, TestSuiteTree> index;
     /** Reference to the parent node. */
     private TestSuiteTree parent;
 
@@ -31,22 +40,20 @@ class TestSuiteTree {
      * @param testSuiteUUID UUID for the test suite at this level.
      */
     public TestSuiteTree(@NonNull String name, @NonNull String nodeKey, @NonNull UUID testSuiteUUID) {
+        this(name, nodeKey, testSuiteUUID, new HashMap<>());
+    }
+
+    private TestSuiteTree(String name, String nodeKey, UUID testSuiteUUID, Map<String, TestSuiteTree> index) {
         this.testSuiteName = name;
         this.nodeKey = nodeKey;
         this.testSuiteUUID = testSuiteUUID;
+        this.index = index;
+        index.put(nodeKey, this);
     }
 
     public String getName() { return testSuiteName; }
     public String getNodeKey() { return nodeKey; }
     public UUID getTestSuiteUUID() { return testSuiteUUID; }
-
-    /**
-     * Test if a node has child nodes.
-     * @return True if and only if the node has child nodes.
-     */
-    public boolean hasChildren() {
-        return !children.isEmpty();
-    }
 
     @Override
     public String toString() {
@@ -64,15 +71,17 @@ class TestSuiteTree {
      * @return An Optional containing the newly added node, or an empty Optional if there already was a child node with the given name.
      */
     public Optional<TestSuiteTree> addChild(@NonNull String name, @NonNull String nodeKey, @NonNull UUID testSuiteUUID) {
-        // The field "name" should be unique among the children of a node.
-        if (getChildByName(name).isPresent()) {
-            return Optional.empty();
+        synchronized (index) {
+            // The field "name" should be unique among the children of a node.
+            if (getChildByName(name).isPresent()) {
+                return Optional.empty();
+            }
+            // If there is not already a child node with the given name, create and add it.
+            TestSuiteTree child = new TestSuiteTree(name, nodeKey, testSuiteUUID, index);
+            children.add(child);
+            child.parent = this;
+            return Optional.of(child);
         }
-        // If there is not already a child node with the given name, create and add it.
-        TestSuiteTree child = new TestSuiteTree(name, nodeKey, testSuiteUUID);
-        children.add(child);
-        child.parent = this;
-        return Optional.of(child);
     }
 
     /**
@@ -81,18 +90,10 @@ class TestSuiteTree {
      * @return An Optional containing the subtree with the given ID. If there is no such subtree, returns an empty Optional.
      */
     public Optional<TestSuiteTree> findSubtree(@NonNull String id) {
-        if (id.equals(nodeKey)) {
-            return Optional.of(this);
+        synchronized (index) {
+            TestSuiteTree found = index.get(id);
+            return found != null && found.isSelfOrDescendantOf(this) ? Optional.of(found) : Optional.empty();
         }
-
-        for (TestSuiteTree child: children) {
-            Optional<TestSuiteTree> searchResult = child.findSubtree(id);
-            if (searchResult.isPresent()) {
-                return searchResult;
-            }
-        }
-
-        return Optional.empty();
     }
 
     /**
@@ -102,41 +103,30 @@ class TestSuiteTree {
      * @return An Optional containing the child node with the given name; or an empty Optional if there is no such node.
      */
     public Optional<TestSuiteTree> getChildByName(@NonNull String name) {
-        return children
-                .stream()
-                .filter(treeItem->name.equals(treeItem.getName()))
-                .findFirst()
-        ;
+        synchronized (index) {
+            return children
+                    .stream()
+                    .filter(treeItem -> name.equals(treeItem.getName()))
+                    .findFirst();
+        }
     }
 
     /**
-     * Make a list containing all the leaf nodes of the node.
-     * @return A list with all leaf nodes that descend from this node.
+     * Runs an action while holding the lock of this tree, so a lookup and the additions that depend on it
+     * cannot be interleaved with those of another thread.
      */
-    List<TestSuiteTree> getLeaves() {
-        List<TestSuiteTree> res = new ArrayList<>();
-        if (children.isEmpty()) {
-            res.add(this);
-        } else {
-            for (TestSuiteTree child : children) {
-                res.addAll(child.getLeaves());
+    <T> T locked(java.util.function.Supplier<T> action) {
+        synchronized (index) {
+            return action.get();
+        }
+    }
+
+    private boolean isSelfOrDescendantOf(TestSuiteTree ancestor) {
+        for (TestSuiteTree node = this; node != null; node = node.parent) {
+            if (node == ancestor) {
+                return true;
             }
         }
-        return res;
-    }
-
-    /**
-     * Detach this subtree from its parent.
-     * @return `true` if and the subtree was successfully removed, or if it didn't have a parent in the first place. Returns `false` otherwise.
-     */
-    public boolean detach() {
-        if (parent == null)
-            return true;
-
-        boolean res = parent.children.remove(this);
-        if (res) {
-            this.parent = null;
-        }
-        return res;
+        return false;
     }
 }
