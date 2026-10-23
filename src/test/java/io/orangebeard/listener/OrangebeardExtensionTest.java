@@ -8,7 +8,7 @@ import io.orangebeard.client.entity.test.FinishTest;
 import io.orangebeard.client.entity.test.StartTest;
 import io.orangebeard.client.entity.test.TestStatus;
 import io.orangebeard.client.entity.test.TestType;
-import io.orangebeard.client.v3.V3Client;
+import io.orangebeard.client.v3.OrangebeardAsyncV3Client;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,7 +34,7 @@ import static org.mockito.Mockito.when;
 class OrangebeardExtensionTest {
     private static final UUID RUN = UUID.fromString("49e7186d-e14d-4eeb-bc29-e36279d3b628");
 
-    private final V3Client client = mock(V3Client.class);
+    private final OrangebeardAsyncV3Client client = mock(OrangebeardAsyncV3Client.class);
     private OrangebeardExtension extension;
 
     @BeforeEach

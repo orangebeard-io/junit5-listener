@@ -3,7 +3,7 @@ package io.orangebeard.listener;
 import io.orangebeard.client.entity.LogFormat;
 import io.orangebeard.client.entity.log.Log;
 import io.orangebeard.client.entity.log.LogLevel;
-import io.orangebeard.client.v3.V3Client;
+import io.orangebeard.client.v3.OrangebeardAsyncV3Client;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,7 +22,7 @@ import static org.mockito.Mockito.when;
 
 class OrangebeardExecutionListenerTest {
     private final OrangebeardContext context = OrangebeardContext.getInstance();
-    private final V3Client client = mock(V3Client.class);
+    private final OrangebeardAsyncV3Client client = mock(OrangebeardAsyncV3Client.class);
     private final TestIdentifier testIdentifier = mock(TestIdentifier.class);
 
     @BeforeEach

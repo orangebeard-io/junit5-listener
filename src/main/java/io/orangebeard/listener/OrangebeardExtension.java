@@ -11,7 +11,6 @@ import io.orangebeard.client.entity.test.StartTest;
 import io.orangebeard.client.entity.test.TestStatus;
 import io.orangebeard.client.entity.test.TestType;
 import io.orangebeard.client.v3.OrangebeardAsyncV3Client;
-import io.orangebeard.client.v3.V3Client;
 
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -45,7 +44,7 @@ public class OrangebeardExtension implements
     private static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create(OrangebeardExtension.class);
 
     private final OrangebeardContext runContext = OrangebeardContext.getInstance();
-    private final V3Client client;
+    private final OrangebeardAsyncV3Client client;
     private final UUID testrunUUID;
 
     /** Tree-structure to keep track of the hierarchy of test suites; shared by all extension instances of the run. */
@@ -58,7 +57,7 @@ public class OrangebeardExtension implements
     /**
      * @param orangebeardClient the client to report to; when null, one is created from the properties
      */
-    OrangebeardExtension(V3Client orangebeardClient, OrangebeardProperties orangebeardProperties) {
+    OrangebeardExtension(OrangebeardAsyncV3Client orangebeardClient, OrangebeardProperties orangebeardProperties) {
         this.client = runContext.ensureClient(() -> {
             if (orangebeardClient != null) {
                 return orangebeardClient;

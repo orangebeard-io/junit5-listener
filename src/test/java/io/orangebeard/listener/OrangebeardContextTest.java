@@ -2,7 +2,7 @@ package io.orangebeard.listener;
 
 import io.orangebeard.client.entity.FinishV3TestRun;
 import io.orangebeard.client.entity.StartV3TestRun;
-import io.orangebeard.client.v3.V3Client;
+import io.orangebeard.client.v3.OrangebeardAsyncV3Client;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,7 +26,7 @@ import static org.mockito.Mockito.when;
 
 class OrangebeardContextTest {
     private final OrangebeardContext context = OrangebeardContext.getInstance();
-    private final V3Client client = mock(V3Client.class);
+    private final OrangebeardAsyncV3Client client = mock(OrangebeardAsyncV3Client.class);
 
     @BeforeEach
     void setUp() {
@@ -79,8 +79,8 @@ class OrangebeardContextTest {
 
     @Test
     void the_client_is_only_created_once() {
-        V3Client first = context.ensureClient(() -> client);
-        V3Client second = context.ensureClient(() -> mock(V3Client.class));
+        OrangebeardAsyncV3Client first = context.ensureClient(() -> client);
+        OrangebeardAsyncV3Client second = context.ensureClient(() -> mock(OrangebeardAsyncV3Client.class));
 
         assertThat(first).isSameAs(client);
         assertThat(second).isSameAs(client);

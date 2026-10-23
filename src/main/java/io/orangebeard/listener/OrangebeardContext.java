@@ -2,7 +2,7 @@ package io.orangebeard.listener;
 
 import io.orangebeard.client.entity.FinishV3TestRun;
 import io.orangebeard.client.entity.StartV3TestRun;
-import io.orangebeard.client.v3.V3Client;
+import io.orangebeard.client.v3.OrangebeardAsyncV3Client;
 
 import lombok.Getter;
 import org.slf4j.Logger;
@@ -26,7 +26,11 @@ public class OrangebeardContext {
 
     private final Map<String, UUID> tests = new ConcurrentHashMap<>();
 
-    private volatile V3Client client = null;
+    /**
+     * Deliberately the async client (not just {@code V3Client}): it queues the requests and sends them from its own
+     * threads, so reporting never makes the tests wait for Orangebeard.
+     */
+    private volatile OrangebeardAsyncV3Client client = null;
     private volatile UUID testRunUUID = null;
     /** The suites started for the current run. Shared, because every test class may get its own extension instance. */
     private volatile TestSuiteTree suiteTree = newSuiteTree();
@@ -42,11 +46,11 @@ public class OrangebeardContext {
         //prevent instantiation
     }
 
-    public V3Client getClient() {
+    public OrangebeardAsyncV3Client getClient() {
         return client;
     }
 
-    public void setClient(V3Client client) {
+    public void setClient(OrangebeardAsyncV3Client client) {
         this.client = client;
     }
 
@@ -79,7 +83,7 @@ public class OrangebeardContext {
     }
 
     /** Returns the client, creating it first if there is none yet. */
-    synchronized V3Client ensureClient(Supplier<? extends V3Client> factory) {
+    synchronized OrangebeardAsyncV3Client ensureClient(Supplier<? extends OrangebeardAsyncV3Client> factory) {
         if (client == null) {
             client = factory.get();
         }
